@@ -38,7 +38,7 @@ The generated video uses:
 | Container|MP4|
 | Video Codec|H.264|
 | Audio Codec|AAC|
-| Resolution|1080 × 1920|
+| Resolution|1920 × 1080|
 | Pixel Format|yuv420p|
 | Frame Rate|Configurable|
 | Video Encoding|libx264|
