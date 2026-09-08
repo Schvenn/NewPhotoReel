@@ -17,7 +17,7 @@ A PowerShell module that creates a vertical, Facebook-friendly photo reel from a
 # Usage
 
 ```
-NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -Help
+NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -Help
 ```
 
 | Setting| Value|
