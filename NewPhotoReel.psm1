@@ -1,4 +1,7 @@
-function newphotoreel ([string]$Folder, [int]$MP3SpeedAdjust = 13, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [switch]$help) {# Create a Facebook safe photo reel from the images and mp3 stored in a specific directory.
+function newphotoreel ([string]$Folder, [int]$MP3SpeedAdjust = 13, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [string]$Watermark, [switch]$help) {# Create a Facebook safe photo reel from the images and mp3 stored in a specific directory.
+
+if ([string]::IsNullOrWhiteSpace($Watermark) -or $Watermark -eq "default") {$Watermark = Join-Path $PSScriptRoot 'watermark.png'; Write-Host -f yellow "`nUsing: " -n; Write-Host -f white "$Watermark"}
+if (-not (Test-Path -LiteralPath $Watermark -PathType Leaf)) {throw "Watermark file was not found: $Watermark"}
 
 # Settings
 function LoadConfiguration {$script:ConfigPath = Join-Path $PSScriptRoot 'NewPhotoReel.psd1'
@@ -15,7 +18,9 @@ $script:FrameRate = [int]$script:Config.PrivateData.FrameRate
 $script:AudioSkip = [int]$script:Config.PrivateData.AudioSkip
 $script:AudioFadeIn = [int]$script:Config.PrivateData.AudioFadeIn
 $script:AudioFadeOut = [int]$script:Config.PrivateData.AudioFadeOut
-$script:TransitionDuration = [double]$script:Config.PrivateData.TransitionDuration}
+$script:TransitionDuration = [double]$script:Config.PrivateData.TransitionDuration
+$script:WatermarkRight = [int]$script:Config.PrivateData.Watermark.Right
+$script:WatermarkBottom = [int]$script:Config.PrivateData.Watermark.Bottom}
 LoadConfiguration
 
 # Modify fields sent to it with proper word wrapping.
@@ -109,7 +114,7 @@ $PhotoDuration = [Math]::Round($PhotoDuration, 1)
 $AudioSpeed = ($MP3SpeedAdjust / 100) + 1
 
 
-if ([string]::IsNullOrWhiteSpace($Folder)) {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -Help"
+if ([string]::IsNullOrWhiteSpace($Folder)) {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'watermark.png' -Help"
 Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "Path to the folder containing the MP3 file and all the relevant photos."
 Write-Host -f cyan "MP3SpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the MP3 file. The default is 13."
 Write-Host -f cyan "PhotoDuration: `t`t" -n; Write-Host -f white "The number of seconds each photo should be displayed. The default is 1.5."
@@ -226,7 +231,16 @@ $ffmpegArgs.Add($clipDuration.ToString([System.Globalization.CultureInfo]::Invar
 $ffmpegArgs.Add('-i')
 $ffmpegArgs.Add($photo.FullName)}
 
+# Add watermark image
+$watermarkIndex = $photoCount
+if ($Watermark) {if (-not (Test-Path -LiteralPath $Watermark -PathType Leaf)) {throw "Watermark file was not found: $Watermark"}
+$ffmpegArgs.Add('-loop')
+$ffmpegArgs.Add('1')
+$ffmpegArgs.Add('-i')
+$ffmpegArgs.Add((Resolve-Path -LiteralPath $Watermark).Path)}
+
 # Loop audio indefinitely so it can never run out before the photos finish
+$audioIndex = $photoCount + [int]([bool]$Watermark)
 $ffmpegArgs.Add('-stream_loop')
 $ffmpegArgs.Add('-1')
 $ffmpegArgs.Add('-i')
@@ -249,7 +263,7 @@ $filter += "[v${i}]"
 $filterParts.Add($filter)}
 
 # Build crossfade chain
-if ($photoCount -eq 1) {$filterParts.Add("[v0]trim=duration=${videoDuration},setpts=PTS-STARTPTS[vout]")}
+if ($photoCount -eq 1) {$filterParts.Add("[v0]trim=duration=${videoDuration},setpts=PTS-STARTPTS[basevideo]")}
 else {$previous = '[v0]'
 for ($i = 1; $i -lt $photoCount; $i++) {$offset = $i * $PhotoDuration
 $outputLabel = "[x${i}]"
@@ -261,10 +275,14 @@ $xfade += ":offset=${offset}"
 $xfade += $outputLabel
 $filterParts.Add($xfade)
 $previous = $outputLabel}
-$filterParts.Add("${previous}trim=duration=${videoDuration},setpts=PTS-STARTPTS[vout]")}
+$filterParts.Add("${previous}trim=duration=${videoDuration},setpts=PTS-STARTPTS[basevideo]")}
+
+# Apply watermark
+if ($Watermark) {$filterParts.Add("[${watermarkIndex}:v]format=rgba,colorchannelmixer=aa=0.85[wm]")
+$filterParts.Add("[basevideo][wm]overlay=W-w-${script:WatermarkRight}:H-h-${script:WatermarkBottom}:shortest=1[vout]")}
+else {$filterParts.Add("[basevideo]copy[vout]")}
 
 # Audio filter
-$audioIndex = $photoCount
 $audioFilter = "[${audioIndex}:a]"
 $audioFilter += "atrim=start=${AudioSkip},"
 $audioFilter += "asetpts=PTS-STARTPTS,"
@@ -322,13 +340,14 @@ Export-ModuleMember -Function newphotoreel
 
 This function will use FFMPEG to create a Facebook safe photo reel from the images and mp3 stored in a specific directory.
 
-Usage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -Help
+Usage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'watermark.png' -Help
 
 Folder:		The path to the folder containing the MP3 file and all the relevant photos.
 MP3SpeedAdjust:	The percentage of speed adjustment to apply to the MP3 file. The default is 13.
 PhotoDuration:	The number of seconds each photo should be displayed. The default is 1.5.
 FirstPhoto:	The first photo to display. This is optional.
 LastPhoto:	The last photo to display. This is optional.
+Watermark:	Optional path to a transparent PNG watermark image.
 Help:		Call the full Help menu.
 
 Notes:
