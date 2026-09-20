@@ -4,7 +4,7 @@ A PowerShell module that creates a vertical, Facebook-friendly photo reel from a
 
 `NewPhotoReel` uses **FFmpeg** to:
 
-* Create a 1920 x 1080 vertical video.
+* Create a 1024 x 1024 video, or adjust the size according to your preference.
 * Sort photos into chronological order.
 * Display each photo for a configurable duration.
 * Fade between photos.
@@ -17,7 +17,7 @@ A PowerShell module that creates a vertical, Facebook-friendly photo reel from a
 # Usage
 
 ```
-NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -Help
+NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'filename.ext' -Help
 ```
 
 | Setting| Value|
@@ -27,6 +27,7 @@ NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filenam
 |PhotoDuration|The number of seconds each photo should be displayed. The default is 1.5.|
 |FirstPhoto|The first photo to display. This is optional.|
 |LastPhoto|The last photo to display. This is optional.|
+|Watermark|Add a transparent overlay, aligned by the bottom right corner. This is optional.|
 |Help|Call the full Help menu.|
 
 # Video Output
@@ -38,7 +39,7 @@ The generated video uses:
 | Container|MP4|
 | Video Codec|H.264|
 | Audio Codec|AAC|
-| Resolution|1920 × 1080|
+| Resolution|1024 x 1024|
 | Pixel Format|yuv420p|
 | Frame Rate|Configurable|
 | Video Encoding|libx264|
@@ -54,8 +55,8 @@ The module reads its configuration from `NewPhotoReel.psd1`
 | --- | --- |
 |AudioSkip = '5'|This is the number of seconds of audio to skip at the start of the MP3 file.|
 |Path = 'C:\Program Files (x86)\FFMPeg\bin'|This is the path to the FFMPEG.EXE file and it's files.|
-|Height = '1920'|This is the height of the video.|
-|Width = '1080'|This is the width of the video.|
+|Height = '1024'|This is the height of the video.|
+|Width = '1024'|This is the width of the video.|
 |MaxPictureHeight = '1536'|This is the maximum height, before resize or crop.|
 |MaxPictureWidth = '1536'|This is the maximum width, before resize or crop.|
 |FrameRate = '30'|This is the frames per second to use during encoding.|
@@ -110,6 +111,7 @@ This information updates continuously while the reel is being created.
 
 * At least one MP3 file is required.
 * At least one supported image file is required.
+* An optional watermark should be a transparent `.png` file.
 * Supported image formats are: `.jpg, .jpeg, .png`
 * FFmpeg 4.0 or newer is required.
 * The final output uses H.264 video and AAC audio.
