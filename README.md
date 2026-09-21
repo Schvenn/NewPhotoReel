@@ -52,7 +52,8 @@ The generated video uses:
 | Video Encoding|libx264|
 | Audio Bitrate|192 kb/s|
 
-The output file is created using the name of the source folder.
+* The output file is created using the name of the source folder.
+* The default watermark file is "watermark.png" located in the module directory.
 
 # Configuration
 
