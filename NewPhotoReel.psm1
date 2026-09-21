@@ -1,7 +1,11 @@
 function newphotoreel ([string]$Folder, [int]$MP3SpeedAdjust = 13, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [string]$Watermark, [double]$Volume = 100, [string]$IntroText, [string]$OutroText, [ValidateSet('Chronological','Filename','Random')][string]$Order = 'Chronological', [switch]$KenBurns, [switch]$RandomTransition, [switch]$help) {# Create a Facebook safe photo reel from the images and mp3 stored in a specific directory.
 
-if ([string]::IsNullOrWhiteSpace($Watermark) -or $Watermark -eq "default") {$Watermark = Join-Path $PSScriptRoot 'watermark.png'; Write-Host -f yellow "`nUsing: " -n; Write-Host -f white "$Watermark"}
+# Resolve watermark only when -Watermark is specified.
+if ($PSBoundParameters.ContainsKey('Watermark')) {if ([string]::IsNullOrWhiteSpace($Watermark) -or $Watermark -eq 'default') {$Watermark = Join-Path $PSScriptRoot 'watermark.png'}
 if (-not (Test-Path -LiteralPath $Watermark -PathType Leaf)) {throw "Watermark file was not found: $Watermark"}
+$Watermark = (Resolve-Path -LiteralPath $Watermark).Path
+Write-Host -f yellow "`nUsing: " -n; Write-Host -f white "$Watermark"}
+else {$Watermark = $null}
 
 # Load settings.
 function LoadConfiguration {$script:ConfigPath = Join-Path $PSScriptRoot 'NewPhotoReel.psd1'
@@ -148,14 +152,14 @@ if ($script:Volume -lt 0 -or $script:Volume -gt 200) {throw "Volume must be betw
 if ($PSBoundParameters.ContainsKey('IntroText')) {$script:IntroText = $IntroText}
 if ($PSBoundParameters.ContainsKey('OutroText')) {$script:OutroText = $OutroText}
 
-if ([string]::IsNullOrWhiteSpace($Folder)) {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'watermark.png' -Volume ##% -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
+if ([string]::IsNullOrWhiteSpace($Folder)) {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ##% -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
 Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "Path to the folder containing the MP3 file and all the relevant photos."
 Write-Host -f cyan "MP3SpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the MP3 file. The default is 13."
 Write-Host -f cyan "PhotoDuration: `t`t" -n; Write-Host -f white "The number of seconds each photo should be displayed. The default is 1.5."
 Write-Host -f yellow "`nThe following switches are all optional.`n"
 Write-Host -f cyan "FirstPhoto: `t`t" -n; Write-Host -f white "The first photo to display."
 Write-Host -f cyan "LastPhoto: `t`t" -n; Write-Host -f white "The last photo to display."
-Write-Host -f cyan "Watermark: `t`t" -n; Write-Host -f white "Define a watermark file to display."
+Write-Host -f cyan "Watermark: `t`t" -n; Write-Host -f white "Define a watermark file to display. Use 'default' or specify a full path."
 Write-Host -f cyan "Volume: `t`t" -n; Write-Host -f white "Set the volume percentage."
 Write-Host -f cyan "IntroText: `t`t" -n; Write-Host -f white "Add a text based introduction frame."
 Write-Host -f cyan "OutroText: `t`t" -n; Write-Host -f white "Add a text-based final frame."
@@ -438,7 +442,7 @@ Export-ModuleMember -Function newphotoreel
 ## Overview
 This function will use FFMPEG to create a Facebook safe photo reel from the images and mp3 stored in a specified directory.
 
-Usage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
+Usage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
 
 Folder:			The path to the folder containing the MP3 file and all the relevant photos.
 MP3SpeedAdjust:		The percentage of speed adjustment to apply to the MP3 file. The default is 13.
@@ -448,7 +452,7 @@ The following switches are all optional.
 
 FirstPhoto:		The first photo to display.
 LastPhoto:		The last photo to display.
-Watermark:		Optional path to a transparent PNG watermark image.
+Watermark:		Define a watermark file to display. Use 'default' or specify a full path.
 Volume:			Set the volume percentage.
 IntroText:		Add a text based introduction frame.
 OutroText:		Add a text-based final frame.
