@@ -271,6 +271,7 @@ Write-Host -f yellow "Text"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "Intro text:   " -n; Write-Host -f yellow "$script:IntroText"
 Write-Host -f cyan "Outro text:   " -n; Write-Host -f yellow "$script:OutroText`n"
+Write-Host -f yellow "Output"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "Output File:  " -n; Write-Host -f yellow "$OutputFile"
 Write-Host -f cyan "Duration:     " -n; Write-Host -f white "$([Math]::Round($videoDuration, 0)) seconds"
