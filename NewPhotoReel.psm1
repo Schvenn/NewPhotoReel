@@ -478,7 +478,7 @@ MaxPictureWidth = '1536'	This is the maximum picture width, before resize or cro
 
 TransitionDuration = '0.5'	This is the length of time in seconds to use to fade between photos.
 
-# This is the permitted set of transitions to use for the Random switch.
+# This is the permitted subset of transitions to use for the Random switch.
 RandomTransitions = @('fade','fadeblack','fadewhite','smoothleft','smoothright','circleopen')
 
 # This is the font file to use:
