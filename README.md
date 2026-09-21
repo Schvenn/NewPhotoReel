@@ -17,7 +17,7 @@ A PowerShell module that creates a vertical, Facebook-friendly photo reel from a
 # Usage
 
 ```
-NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'filename.ext' -Help
+NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'filename.ext'  -Volume ##% -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help
 ```
 
 | Setting| Value|
@@ -28,7 +28,14 @@ NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filenam
 |FirstPhoto|The first photo to display. This is optional.|
 |LastPhoto|The last photo to display. This is optional.|
 |Watermark|Add a transparent overlay, aligned by the bottom right corner. This is optional.|
+|Volume|Set the volume percentage.|
+|IntroText|Add a text based introduction frame.|
+|OutroText|Add a text-based final frame.|
+|Order|Set the order to Chronological, Filename (alphabetical), or Random.|
+|KenBurns|Use the zoom transition made famous by documentary film maker Ken Burns.|
+|RandomTransition|Use a random transition.|
 |Help|Call the full Help menu.|
+
 
 # Video Output
 
@@ -54,15 +61,26 @@ The module reads its configuration from `NewPhotoReel.psd1`
 | Setting| Value|
 | --- | --- |
 |AudioSkip = '5'|This is the number of seconds of audio to skip at the start of the MP3 file.|
-|Path = 'C:\Program Files (x86)\FFMPeg\bin'|This is the path to the FFMPEG.EXE file and it's files.|
-|Height = '1024'|This is the height of the video.|
-|Width = '1024'|This is the width of the video.|
-|MaxPictureHeight = '1536'|This is the maximum height, before resize or crop.|
-|MaxPictureWidth = '1536'|This is the maximum width, before resize or crop.|
-|FrameRate = '30'|This is the frames per second to use during encoding.|
 |AudioFadeIn = '5'|This is the number of seconds to use to fade the audio in.|
 |AudioFadeOut = '5'|This is the number of seconds to use to fade the audio out.|
+|Volume = '100'|This is the default volume percentage to use.|
+|Height = '1024'|This is the height of the video.|
+|Width = '1024'|This is the width of the video.|
+|FrameRate = '30'|This is the frames per second to use during encoding.|
+|MaxPictureHeight = '1536'|This is the maximum picture height, before resize or crop.|
+|MaxPictureWidth = '1536'|This is the maximum picture width, before resize or crop.|
 |TransitionDuration = '0.5'|This is the length of time in seconds to use to fade between photos.|
+|RandomTransitions = @('fade'...|This is the permitted subset of transitions to use for the Random switch, selected from: 'fade', 'fadeblack', 'fadewhite', 'slideleft', 'slideright', 'slideup', 'slidedown', 'smoothleft', 'smoothright', 'wipeleft', 'wiperight', 'circleopen'|
+|FontFile = 'C:\Windows\Fonts\arial.ttf'|This is the font file to use:|
+|IntroText = ''|This is the default text to use for the intro screen.|
+|OutroText = ''|This is the default text to use for the outro screen.|
+|TextCardBackground = '#2B233D'|This is the background colour to use for the intro and outro screens.|
+|TextCardDuration = '3'|This is the length of time the intro and outro frames remain on screen.|
+|TextCardFontSize = '68'|This is the font size to use for the intro and outro text.|
+|TextCardMaxWidth = '850'|This is the maximum with the intro and outro text is allowed to take on the screen.|
+|Path = 'C:\Program Files (x86)\FFMPeg\bin'|This is the path to the FFMPEG.EXE file and it's files.|
+|Watermark = @{Right = 0|This sets the horizontal offset to use for the watermark image.|
+|Bottom = 0}|This sets the vertical offset to use for the watermark image.|
 
 # Image Processing
 
@@ -90,6 +108,7 @@ The MP3 soundtrack is:
 5. Trimmed to the final video duration.
 6. Faded in.
 7. Faded out.
+8. Volume adjusted.
 
 The first MP3 file found alphabetically is used as the soundtrack and the final audio duration always matches the generated video.
 
