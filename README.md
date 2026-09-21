@@ -136,3 +136,20 @@ This information updates continuously while the reel is being created.
 * FFmpeg 4.0 or newer is required.
 * The final output uses H.264 video and AAC audio.
 * The source folder name is used as the output filename.
+
+---
+Example usages:
+
+This will generate a video using the default transitions, with no watermark, and no intro or outro text:
+```
+newphotoreel photos -introtext '' -outrotext ''
+```
+This will generate a video with an intro, an outro and apply the default watermark. The first and last image are also specified, which will appear after the intro and before the outro:
+```
+newphotoreel photos -watermark default -introtext 'Summer Vacation 2026' -outrotext 'Thanks for watching!' -firstphoto 'camper.jpg' -lastphoto 'unpacking.jpg'
+```
+
+This will generate a video with the default intro and outros specified in the configuration file, will speed up the MP3 file by a very fast 25% and use the Ken Burns style zoom transitions:
+```
+newphotoreel photos -mp3speedadjust 25 -kenburns
+```
