@@ -235,19 +235,6 @@ if ($Order -eq 'Filename') {$photos = @($photos | Sort-Object Name)}
 elseif ($Order -eq 'Random') {$photos = @($photos | Sort-Object {Get-Random})}
 $photoCount = $photos.Count
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Effective picture size. The source image can never be larger than the final canvas, otherwise pad() would be asked to make a smaller canvas.
 $effectiveMaxWidth = [Math]::Min($MaxPictureWidth, $Width)
 $effectiveMaxHeight = [Math]::Min($MaxPictureHeight, $Height)
