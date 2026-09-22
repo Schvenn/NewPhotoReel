@@ -5,9 +5,9 @@ A PowerShell module that creates a vertical, Facebook-friendly photo reel from a
 `NewPhotoReel` uses **FFmpeg** to:
 
 * Create a 1024 x 1024 video, or adjust the size according to your preference.
-* Sort photos into chronological order.
+* Sort photos into chronological, alphabetic or random order.
 * Display each photo for a configurable duration.
-* Fade between photos.
+* Multiple transitions available between photos.
 * Resize and pad images while preserving their aspect ratio.
 * Add an MP3 soundtrack.
 * Adjust the playback speed of the audio.
