@@ -15,7 +15,7 @@ FileList = @('NewPhotoReel.psm1')
 PrivateData = @{PSData = @{Tags = @('audio', 'ffmpeg', 'jpeg', 'jpg', 'mp3', 'mp4', 'photo', 'png', 'video', 'facebook')
 LicenseUri = 'https://github.com/Schvenn/NewPhotoReel/blob/main/license.txt'
 ProjectUri = 'https://github.com/Schvenn/NewPhotoReel'
-ReleaseNotes = 'Added volume, intro, outro, order and transitions.'}
+ReleaseNotes = 'Added custom banner text to the bottom of every frame.'}
 
 AudioSkip = '5'
 AudioFadeIn = '5'
@@ -44,5 +44,12 @@ RandomTransitions = @('fade','fadeblack','fadewhite','smoothleft','smoothright',
 
 Path = 'C:\Program Files (x86)\FFMPeg\bin'
 
-Watermark = @{Right = 0
-Bottom = 0}}}
+Watermark = @{Right = 362
+Bottom = 50}
+
+Banner = @{Enabled = $true
+Height = 38
+Background = '#2B233D'
+Text = ''
+TextColour = 'white'
+FontSize = 24}}}
