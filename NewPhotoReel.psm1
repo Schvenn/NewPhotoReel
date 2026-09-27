@@ -267,6 +267,8 @@ $clipDuration = $PhotoDuration + $TransitionDuration
 $introDuration = if ([string]::IsNullOrWhiteSpace($script:IntroText)) {0} else {$script:TextCardDuration}
 $outroDuration = if ([string]::IsNullOrWhiteSpace($script:OutroText)) {0} else {$script:TextCardDuration}
 $videoDuration = $introDuration + $photoVideoDuration + $outroDuration
+if ($introDuration -gt 0) {$videoDuration -= $TransitionDuration}
+if ($outroDuration -gt 0) {$videoDuration -= $TransitionDuration}
 
 # -------------------------------------- Audio fade timing. ---------------------------------------
 $audioFadeOutStart = [Math]::Max(0, $videoDuration - $AudioFadeOut)
@@ -296,7 +298,7 @@ else {Write-Host -f cyan "Banner text:    " -n; Write-Host -f white "Disabled`n"
 Write-Host -f yellow "Output"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "Output File:  " -n; Write-Host -f yellow "$OutputFile"
-Write-Host -f cyan "Duration:     " -n; Write-Host -f white "$([Math]::Round($videoDuration, 0)) seconds"
+Write-Host -f cyan "Duration:     " -n; Write-Host -f white "$([Math]::Round($videoDuration, 1)) seconds"
 Write-Host -f cyan "Resolution:   " -n; Write-Host -f white "${Height} x ${Width}`n"
 Write-Host -f yellow ("-" * 50)}
 displayoutputsettings
@@ -369,15 +371,15 @@ if ($introDuration -gt 0) {$introTextFile = Join-Path $env:TEMP "NewPhotoReel_in
 $introFilterText = WrapTextCard $script:IntroText
 [System.IO.File]::WriteAllText($introTextFile,$introFilterText,(New-Object System.Text.UTF8Encoding($false)))
 $introTextPath = (Resolve-Path -LiteralPath $introTextFile).Path.Replace('\','/').Replace(':','\:')
-$filterParts.Add("[${introIndex}:v]drawtext=fontfile='$fontFile':textfile='$introTextPath':fontcolor=white:fontsize=$($script:TextCardFontSize):line_spacing=10:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[intro]")}
+$filterParts.Add("[${introIndex}:v]drawtext=fontfile='$fontFile':textfile='$introTextPath':fontcolor=white:fontsize=$($script:TextCardFontSize):line_spacing=10:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p,setsar=1,setpts=PTS-STARTPTS,fps=${FrameRate}[intro]")}
 if ($outroDuration -gt 0) {$outroTextFile = Join-Path $env:TEMP "NewPhotoReel_outro_$PID.txt"
 $outroFilterText = WrapTextCard $script:OutroText
 [System.IO.File]::WriteAllText($outroTextFile,$outroFilterText,(New-Object System.Text.UTF8Encoding($false)))
 $outroTextPath = (Resolve-Path -LiteralPath $outroTextFile).Path.Replace('\','/').Replace(':','\:')
-$filterParts.Add("[${outroIndex}:v]drawtext=fontfile='$fontFile':textfile='$outroTextPath':fontcolor=white:fontsize=$($script:TextCardFontSize):line_spacing=10:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[outro]")}
+$filterParts.Add("[${outroIndex}:v]drawtext=fontfile='$fontFile':textfile='$outroTextPath':fontcolor=white:fontsize=$($script:TextCardFontSize):line_spacing=10:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p,setsar=1,setpts=PTS-STARTPTS,fps=${FrameRate}[outro]")}
 
 # -------------------------------------- Build crossfade chain. -----------------------------------
-if ($photoCount -eq 1) {$filterParts.Add("[v0]trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS[photobase]")}
+if ($photoCount -eq 1) {$filterParts.Add("[v0]trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS,fps=${FrameRate},settb=1/${FrameRate}[photobase]")}
 else {$previous = '[v0]'
 for ($i = 1; $i -lt $photoCount; $i++) {$offset = $i * $PhotoDuration
 $outputLabel = "[x${i}]"
@@ -391,7 +393,7 @@ $xfade += ":offset=${offset}"
 $xfade += $outputLabel
 $filterParts.Add($xfade)
 $previous = $outputLabel}
-$filterParts.Add("${previous}trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS[photobase]")}
+$filterParts.Add("${previous}trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS,fps=${FrameRate},settb=1/${FrameRate}[photobase]")}
 
 # -------------------------------------- Add intro transition. -----------------------------------
 $currentVideo = '[photobase]'
@@ -404,15 +406,18 @@ $currentDuration = $introDuration + $photoVideoDuration - $TransitionDuration}
 
 # -------------------------------------- Add outro transition. -----------------------------------
 if ($outroDuration -gt 0) {$outroOffset = [Math]::Max(0,$currentDuration - $TransitionDuration)
-$filterParts.Add("${currentVideo}[outro]xfade=transition=fade:duration=${TransitionDuration}:offset=${outroOffset}[videoWithOutro]")
-$currentVideo = '[videoWithOutro]'}
+$filterParts.Add("${currentVideo}trim=duration=${outroOffset},setpts=PTS-STARTPTS[videoBeforeOutro]")
+$filterParts.Add("[outro]fade=t=in:st=0:d=${TransitionDuration},setpts=PTS-STARTPTS[outroFade]")
+$filterParts.Add("[videoBeforeOutro][outroFade]concat=n=2:v=1:a=0[videoWithOutro]")
+$currentVideo = '[videoWithOutro]'
+$currentDuration = $outroOffset + $outroDuration}
 
 # -------------------------------------- Final video stream. -------------------------------------
 $filterParts.Add("${currentVideo}null[vbase]")
 
 # -------------------------------------- Apply watermarks. -----------------------------------------
 if ($Watermark) {$filterParts.Add("[${watermarkIndex}:v]format=rgba,colorchannelmixer=aa=0.85[wm]")
-$filterParts.Add("[vbase][wm]overlay=W-w-${script:WatermarkRight}:H-h-${script:WatermarkBottom}:shortest=1[vwatermarked]")}
+$filterParts.Add("[vbase][wm]overlay=W-w-${script:WatermarkRight}:H-h-${script:WatermarkBottom}:eof_action=pass[vwatermarked]")}
 else {$filterParts.Add("[vbase]null[vwatermarked]")}
 
 # -------------------------------------- Apply banner. -------------------------------------------
