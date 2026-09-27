@@ -44,8 +44,13 @@ $script:BannerHeight = [int]$script:Config.PrivateData.Banner.Height
 $script:BannerBackground = [string]$script:Config.PrivateData.Banner.Background
 $script:BannerText = [string]$script:Config.PrivateData.Banner.Text
 $script:BannerTextColour = [string]$script:Config.PrivateData.Banner.TextColour
-$script:BannerFontSize = [int]$script:Config.PrivateData.Banner.FontSize}
+$script:BannerFontSize = [int]$script:Config.PrivateData.Banner.FontSize
+$script:BannerFontStyle = [string]$script:Config.PrivateData.Banner.FontStyle}
 LoadConfiguration
+
+# Use the default font style extension formats.
+switch ($script:BannerFontStyle.ToLower()) {'bold' {$BannerFontFile = $script:FontFile -replace '\.ttf$','bd.ttf'} 'italic' {$BannerFontFile = $script:FontFile -replace '\.ttf$','i.ttf'} default {$BannerFontFile = $script:FontFile}}
+$BannerFontFile = $BannerFontFile.Replace('\','/').Replace(':','\:')
 
 # Resolve banner text only when -BannerText is specified.
 if ($PSBoundParameters.ContainsKey('BannerText')) {if ($BannerText -eq 'default') {$script:BannerText = [string]$script:Config.PrivateData.Banner.Text}
@@ -411,7 +416,7 @@ $filterParts.Add("[vbase][wm]overlay=W-w-${script:WatermarkRight}:H-h-${script:W
 else {$filterParts.Add("[vbase]null[vwatermarked]")}
 
 # -------------------------------------- Apply banner. -------------------------------------------
-if ($script:BannerEnabled -and -not [string]::IsNullOrWhiteSpace($script:BannerText)) {$filterParts.Add("[vwatermarked]drawbox=x=0:y=${script:Height}-${script:BannerHeight}:w=${script:Width}:h=${script:BannerHeight}:color=${script:BannerBackground}:t=fill,drawtext=fontfile='$fontFile':text='$($script:BannerText.Replace("'","\'"))':fontcolor=${script:BannerTextColour}:fontsize=${script:BannerFontSize}:x=(w-text_w)/2:y=${script:Height}-${script:BannerHeight}+(${script:BannerHeight}-text_h)/2[vout]")}
+if ($script:BannerEnabled -and -not [string]::IsNullOrWhiteSpace($script:BannerText)) {$filterParts.Add("[vwatermarked]drawbox=x=0:y=${script:Height}-${script:BannerHeight}:w=${script:Width}:h=${script:BannerHeight}:color=${script:BannerBackground}:t=fill,drawtext=fontfile='$BannerFontFile':text='$($script:BannerText.Replace("'","\'"))':fontcolor=${script:BannerTextColour}:fontsize=${script:BannerFontSize}:x=(w-text_w)/2:y=${script:Height}-${script:BannerHeight}+(${script:BannerHeight}-text_h)/2[vout]")}
 else {$filterParts.Add("[vwatermarked]null[vout]")}
 
 # -------------------------------------- Audio filter. --------------------------------------------
@@ -539,7 +544,8 @@ Height = 38			This is the height of the background.
 Background = '#2B233D'		This is the background colour.
 Text = ''			This is the default text to use.
 TextColour = 'white'		This is the font colour.
-FontSize = 24}			This is the font size.
+FontSize = 24			This is the font size.
+FontStyle = 'bold'}		This is the font style (normal|bold|italic).
 
 
 Notes:
@@ -549,6 +555,8 @@ Notes:
 • If no watermark file is provided, the default watermark.png file located in the module directory will be used.
 
 • MP3SpeedAdjust and PhotoDuration have hardcoded defaults that can be overridden via the command line, but because these are expected to be used in every instance of the script being run, no configuration items have been stored in the PSD1 file.
+
+• If you're going to use a font other than the default arial.ttf, make sure that the bold and italic versions of that font use the standard naming conventions that end with "bd.ttf" and "i.ttf".
 
 ## License
 MIT License
