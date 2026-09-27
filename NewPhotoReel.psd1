@@ -52,4 +52,21 @@ Height = 38
 Background = '#2B233D'
 Text = ''
 TextColour = 'white'
-FontSize = 24}}}
+
+# All available transitions include:
+#'fade','fadeblack','fadewhite','slideleft','slideright','slideup','slidedown','smoothleft','smoothright','wipeleft','wiperight','circleopen'
+TransitionDuration = '0.5'
+RandomTransitions = @('fade','fadeblack','fadewhite','smoothleft','smoothright','circleopen')
+
+Path = 'C:\Program Files (x86)\FFMPeg\bin'
+
+Watermark = @{Right = 362
+Bottom = 50}
+
+Banner = @{Enabled = $true
+Height = 38
+Background = '#2B233D'
+Text = ''
+TextColour = 'white'
+FontSize = 24
+FontStyle = 'bold'}}}
