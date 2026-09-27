@@ -8,6 +8,9 @@ A PowerShell module that creates a vertical, Facebook-friendly photo reel from a
 * Sort photos into chronological, alphabetic or random order.
 * Display each photo for a configurable duration.
 * Multiple transitions available between photos.
+* Add custom intro and outro frames with text.
+* Add a custom banner to the bottom.
+* Add a custom watermark.
 * Resize and pad images while preserving their aspect ratio.
 * Add an MP3 soundtrack.
 * Adjust the playback speed of the audio.
@@ -31,6 +34,7 @@ NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filenam
 |Volume|Set the volume percentage.|
 |IntroText|Add a text based introduction frame.|
 |OutroText|Add a text-based final frame.|
+|BannerText|Set a custom text-based banner for use on every frame, keep as default, or turn it off.|
 |Order|Set the order to Chronological, Filename (alphabetical), or Random.|
 |KenBurns|Use the zoom transition made famous by documentary film maker Ken Burns.|
 |RandomTransition|Use a random transition.|
@@ -80,8 +84,20 @@ The module reads its configuration from `NewPhotoReel.psd1`
 |TextCardFontSize = '68'|This is the font size to use for the intro and outro text.|
 |TextCardMaxWidth = '850'|This is the maximum with the intro and outro text is allowed to take on the screen.|
 |Path = 'C:\Program Files (x86)\FFMPeg\bin'|This is the path to the FFMPEG.EXE file and it's files.|
+
+| Watermark Settings| Value|
+| --- | --- |
 |Watermark = @{Right = 0|This sets the horizontal offset to use for the watermark image.|
 |Bottom = 0}|This sets the vertical offset to use for the watermark image.|
+
+| Banner Settings| Value|
+| --- | --- |
+|Banner = @{Enabled = $true|This sets the default for the bottom banner on every image to on/off.|
+|Height = 38|This is the height of the background.|
+|Background = '#2B233D'|This is the background colour.|
+|Text = ''|This is the default text to use.|
+|TextColour = 'white'|This is the font colour.|
+|FontSize = 24}|This is the font size.|
 
 # Image Processing
 
@@ -138,18 +154,18 @@ This information updates continuously while the reel is being created.
 * The source folder name is used as the output filename.
 
 ---
-Example usages:
+# Example usages:
 
-This will generate a video using the default transitions, with no watermark, and no intro or outro text:
+This will generate a video using the default transitions, with no watermark, and no intro text, outro text or banner text:
 ```
-newphotoreel photos -introtext '' -outrotext ''
+newphotoreel photos -introtext '' -outrotext '' -bannertext off
 ```
-This will generate a video with an intro, an outro and apply the default watermark. The first and last image are also specified, which will appear after the intro and before the outro:
+This will generate a video with an intro, an outro and apply the default watermark and default banner. The first and last image are also specified, which will appear after the intro and before the outro:
 ```
-newphotoreel photos -watermark default -introtext 'Summer Vacation 2026' -outrotext 'Thanks for watching!' -firstphoto 'camper.jpg' -lastphoto 'unpacking.jpg'
+newphotoreel photos -watermark default -introtext 'Summer Vacation 2026' -outrotext 'Thanks for watching!' -bannertext default -firstphoto 'camper.jpg' -lastphoto 'unpacking.jpg'
 ```
 
-This will generate a video with the default intro and outros specified in the configuration file, will speed up the MP3 file by a very fast 25% and use the Ken Burns style zoom transitions:
+This will generate a video with all the defaults specified in the configuration file, will speed up the MP3 file by a very fast 25% and use the Ken Burns style zoom transitions:
 ```
 newphotoreel photos -mp3speedadjust 25 -kenburns
 ```
