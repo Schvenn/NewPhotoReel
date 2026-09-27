@@ -406,11 +406,12 @@ $currentDuration = $introDuration + $photoVideoDuration - $TransitionDuration}
 
 # -------------------------------------- Add outro transition. -----------------------------------
 if ($outroDuration -gt 0) {$outroOffset = [Math]::Max(0,$currentDuration - $TransitionDuration)
-$filterParts.Add("${currentVideo}trim=duration=${outroOffset},setpts=PTS-STARTPTS[videoBeforeOutro]")
-$filterParts.Add("[outro]fade=t=in:st=0:d=${TransitionDuration},setpts=PTS-STARTPTS[outroFade]")
-$filterParts.Add("[videoBeforeOutro][outroFade]concat=n=2:v=1:a=0[videoWithOutro]")
+$outroColourDuration = [Math]::Max(0,$outroDuration - $TransitionDuration)
+$filterParts.Add("${currentVideo}tpad=stop_mode=clone:stop_duration=${outroColourDuration},setpts=PTS-STARTPTS[videoWithLastPhoto]")
+$filterParts.Add("[outro]format=rgba,trim=duration=${outroColourDuration},setpts=PTS-STARTPTS,fade=t=in:st=0:d=${TransitionDuration}:alpha=1,setpts=PTS-STARTPTS+${currentDuration}/TB[outroFade]")
+$filterParts.Add("[videoWithLastPhoto][outroFade]overlay=eof_action=pass[videoWithOutro]")
 $currentVideo = '[videoWithOutro]'
-$currentDuration = $outroOffset + $outroDuration}
+$currentDuration = $currentDuration + $outroColourDuration}
 
 # -------------------------------------- Final video stream. -------------------------------------
 $filterParts.Add("${currentVideo}null[vbase]")
