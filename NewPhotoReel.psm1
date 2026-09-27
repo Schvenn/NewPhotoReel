@@ -357,12 +357,6 @@ $filterParts.Add("[${outroIndex}:v]drawtext=fontfile='$fontFile':textfile='$outr
 # -------------------------------------- Build crossfade chain. -----------------------------------
 if ($photoCount -eq 1) {$filterParts.Add("[v0]trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS[photobase]")}
 else {$previous = '[v0]'
-$videoParts = [System.Collections.Generic.List[string]]::new()
-if ($introDuration -gt 0) {$videoParts.Add('[intro]')}
-$videoParts.Add('[photobase]')
-if ($outroDuration -gt 0) {$videoParts.Add('[outro]')}
-if ($videoParts.Count -eq 1) {$filterParts.Add("[photobase]null[vbase]")}
-else {$filterParts.Add(($videoParts -join '') + "concat=n=$($videoParts.Count):v=1:a=0[vbase]")}
 for ($i = 1; $i -lt $photoCount; $i++) {$offset = $i * $PhotoDuration
 $outputLabel = "[x${i}]"
 $xfade = $previous
@@ -376,6 +370,22 @@ $xfade += $outputLabel
 $filterParts.Add($xfade)
 $previous = $outputLabel}
 $filterParts.Add("${previous}trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS[photobase]")}
+
+# Fade intro into first photo.
+if ($introDuration -gt 0) {$introTransitionOffset = $introDuration - $TransitionDuration
+if ($introTransitionOffset -lt 0) {$introTransitionOffset = 0}
+$filterParts.Add("[intro][photobase]xfade=transition=fade:duration=${TransitionDuration}:offset=${introTransitionOffset}[introphoto]")}
+
+# Fade last photo into outro.
+if ($outroDuration -gt 0) {$outroTransitionOffset = $photoVideoDuration - $TransitionDuration
+if ($outroTransitionOffset -lt 0) {$outroTransitionOffset = 0}
+$filterParts.Add("[photobase][outro]xfade=transition=fade:duration=${TransitionDuration}:offset=${outroTransitionOffset}[photooutro]")}
+
+# Build final video chain.
+if ($introDuration -gt 0 -and $outroDuration -gt 0) {$filterParts.Add("[introphoto][outro]concat=n=2:v=1:a=0[vbase]")}
+elseif ($introDuration -gt 0) {$filterParts.Add("[introphoto]null[vbase]")}
+elseif ($outroDuration -gt 0) {$filterParts.Add("[photooutro]null[vbase]")}
+else {$filterParts.Add("[photobase]null[vbase]")}
 
 # -------------------------------------- Apply watermark. -----------------------------------------
 if ($Watermark) {$filterParts.Add("[${watermarkIndex}:v]format=rgba,colorchannelmixer=aa=0.85[wm]")
