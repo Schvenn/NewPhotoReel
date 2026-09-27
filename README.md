@@ -154,7 +154,7 @@ This information updates continuously while the reel is being created.
 * The source folder name is used as the output filename.
 
 ---
-# Example usages:
+# Example Command Lines:
 
 This will generate a video using the default transitions, with no watermark, and no intro text, outro text or banner text:
 ```
