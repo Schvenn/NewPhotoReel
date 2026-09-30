@@ -223,7 +223,7 @@ $MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File -Filter '*.mp3' | Sor
 if (-not $MusicFile) {throw "No MP3 file was found in '$PhotoFolder'."}
 
 # -------------------------------------- Find photos. ---------------------------------------------
-$photos = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(jpg|jpeg|png)$'} | Sort-Object @{Expression = {if ($_.BaseName -match '(\d{4})[-_.](\d{2})[-_.](\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
+$photos = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'} | Sort-Object @{Expression = {if ($_.BaseName -match '(\d{4})[-_.](\d{2})[-_.](\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
 catch {$_.LastWriteTime}}
 elseif ($_.BaseName -match '(\d{4})(\d{2})(\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
 catch {$_.LastWriteTime}}
