@@ -1,6 +1,6 @@
 # NewPhotoReel
 
-A PowerShell module that creates a social media friendly photo reel from a collection of photos (avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp) and an MP3 file.
+A PowerShell module that creates a social media friendly photo reel from a collection of photos (avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp) and an audio file (aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma).
 
 `NewPhotoReel` uses **FFmpeg** to:
 
@@ -12,7 +12,7 @@ A PowerShell module that creates a social media friendly photo reel from a colle
 * Add a custom banner to the bottom.
 * Add a custom watermark.
 * Resize and pad images while preserving their aspect ratio.
-* Add an MP3 soundtrack.
+* Add an audio soundtrack.
 * Adjust the playback speed of the audio.
 * Fade audio in and out.
 * Produce an H.264/AAC MP4 compatible with Facebook and other social platforms.
@@ -20,13 +20,13 @@ A PowerShell module that creates a social media friendly photo reel from a colle
 # Usage
 
 ```
-NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'filename.ext'  -Volume ## -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help
+NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'filename.ext'  -Volume ## -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help
 ```
 
 | Setting| Value|
 | --- | --- |
-|Folder|The path to the folder containing the MP3 file and all the relevant photos.|
-|MP3SpeedAdjust|The percentage of speed adjustment to apply to the MP3 file. The default is 13.|
+|Folder|The path to the folder containing the audio file and all the relevant photos.|
+|AudioSpeedAdjust|The percentage of speed adjustment to apply to the audio file. The default is 13.|
 |PhotoDuration|The number of seconds each photo should be displayed. The default is 1.5.|
 |FirstPhoto|The first photo to display. This is optional.|
 |LastPhoto|The last photo to display. This is optional.|
@@ -65,7 +65,7 @@ The module reads its configuration from `NewPhotoReel.psd1`
 
 | Setting| Value|
 | --- | --- |
-|AudioSkip = '5'|This is the number of seconds of audio to skip at the start of the MP3 file.|
+|AudioSkip = '5'|This is the number of seconds of audio to skip at the start of the audio file.|
 |AudioFadeIn = '5'|This is the number of seconds to use to fade the audio in.|
 |AudioFadeOut = '5'|This is the number of seconds to use to fade the audio out.|
 |Volume = '100'|This is the default volume percentage to use.|
@@ -116,7 +116,7 @@ This prevents distortion while ensuring the output is compatible with Facebook a
 
 # Audio Processing
 
-The MP3 soundtrack is:
+The audio soundtrack is:
 
 1. Looped so it cannot run out before the video ends.
 2. Trimmed to skip the configured number of seconds.
@@ -127,7 +127,7 @@ The MP3 soundtrack is:
 7. Faded out.
 8. Volume adjusted.
 
-The first MP3 file found alphabetically is used as the soundtrack and the final audio duration always matches the generated video.
+The first audio file found alphabetically is used as the soundtrack and the final audio duration always matches the generated video.
 
 ---
 
@@ -145,10 +145,11 @@ This information updates continuously while the reel is being created.
 
 # Notes
 
-* At least one MP3 file is required.
+* At least one audio file is required.
 * At least one supported image file is required.
 * An optional watermark should be a transparent `.png` file.
 * Supported image formats are: `.avif, .bmp, .gif (non-animated), .jfif, .jpeg, .jpg, .png, .tif .tiff, .webp`
+* Supported audio formats are: `.aac, .aif, .aiff, .flac, .m4a, .mp4, .oga, .ogg, .opus, .wav, .wma`
 * FFmpeg 4.0 or newer is required.
 * The final output uses H.264 video and AAC audio.
 * The source folder name is used as the output filename.
@@ -165,7 +166,7 @@ This will generate a video with an intro, an outro and apply the default waterma
 newphotoreel photos -watermark default -introtext 'Summer Vacation 2026' -outrotext 'Thanks for watching!' -bannertext default -firstphoto 'camper.jpg' -lastphoto 'unpacking.jpg'
 ```
 
-This will generate a video with all the defaults specified in the configuration file, will speed up the MP3 file by a very fast 25% and use the Ken Burns style zoom transitions:
+This will generate a video with all the defaults specified in the configuration file, will speed up the audio file by a very fast 25% and use the Ken Burns style zoom transitions:
 ```
-newphotoreel photos -mp3speedadjust 25 -kenburns
+newphotoreel photos -audiospeedadjust 25 -kenburns
 ```
