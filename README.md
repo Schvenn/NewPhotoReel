@@ -1,6 +1,6 @@
 # NewPhotoReel
 
-A PowerShell module that creates a social media friendly photo reel from a collection of photos (avif, bmp, gif, jfif, jpeg, jpg, png, tif tiff, webp) and an MP3 file.
+A PowerShell module that creates a social media friendly photo reel from a collection of photos (avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp) and an MP3 file.
 
 `NewPhotoReel` uses **FFmpeg** to:
 
