@@ -1,4 +1,4 @@
-function newphotoreel ([string]$Folder, [int]$MP3SpeedAdjust = 13, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [string]$Watermark, [double]$Volume = 100, [string]$IntroText, [string]$OutroText, [string]$BannerText, [ValidateSet('Chronological','Filename','Random')][string]$Order = 'Chronological', [switch]$KenBurns, [switch]$RandomTransition, [switch]$help) {# Create a Facebook safe photo reel from the images and mp3 stored in a specific directory.
+function newphotoreel ([string]$Folder, [int]$AudioSpeedAdjust = 13, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [string]$Watermark, [double]$Volume = 100, [string]$IntroText, [string]$OutroText, [string]$BannerText, [ValidateSet('Chronological','Filename','Random')][string]$Order = 'Chronological', [switch]$KenBurns, [switch]$RandomTransition, [switch]$help) {# Create a Facebook safe photo reel from the images and audio file stored in a specific directory.
 
 # Resolve watermark only when -Watermark is specified.
 if ($PSBoundParameters.ContainsKey('Watermark')) {if ([string]::IsNullOrWhiteSpace($Watermark) -or $Watermark -eq 'default') {$Watermark = Join-Path $PSScriptRoot 'watermark.png'}
@@ -159,7 +159,7 @@ if ($help) {help; return}
 # -------------------------------------- Load FFMPEG path. ----------------------------------------
 $env:Path += ";$script:Path"
 $PhotoDuration = [Math]::Round($PhotoDuration, 1)
-$AudioSpeed = ($MP3SpeedAdjust / 100) + 1
+$AudioSpeed = ($AudioSpeedAdjust / 100) + 1
 
 # -------------------------------------- Set volume. ----------------------------------------------
 if ($null -ne $Volume) {$script:Volume = $Volume}
@@ -170,9 +170,9 @@ if ($PSBoundParameters.ContainsKey('IntroText')) {$script:IntroText = $IntroText
 if ($PSBoundParameters.ContainsKey('OutroText')) {$script:OutroText = $OutroText}
 
 # -------------------------------------- Usage. ---------------------------------------------------
-function usage {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'sample' -OutroText 'sample' -BannerText '(custom text|default|off)' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
-Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "Path to the folder containing the MP3 file and all the relevant photos."
-Write-Host -f cyan "MP3SpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the MP3 file. The default is 13."
+function usage {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'sample' -OutroText 'sample' -BannerText '(custom text|default|off)' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
+Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "Path to the folder containing the audio file and all the relevant photos."
+Write-Host -f cyan "AudioSpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the audio file. The default is 13."
 Write-Host -f cyan "PhotoDuration: `t`t" -n; Write-Host -f white "The number of seconds each photo should be displayed. The default is 1.5."
 Write-Host -f yellow "`nThe following switches are all optional.`n"
 Write-Host -f cyan "FirstPhoto: `t`t" -n; Write-Host -f white "The first photo to display."
@@ -218,9 +218,9 @@ if ($MaxPictureWidth -le 0 -or $MaxPictureHeight -le 0) {throw 'MaxPictureWidth 
 if ($FrameRate -le 0) {throw 'FrameRate must be greater than zero.'}
 if ($AudioSpeed -le 0) {throw 'AudioSpeed must be greater than zero.'}
 
-# -------------------------------------- Find the first MP3 in the folder. ------------------------
-$MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File -Filter '*.mp3' | Sort-Object Name | Select-Object -First 1
-if (-not $MusicFile) {throw "No MP3 file was found in '$PhotoFolder'."}
+# -------------------------------------- Find the first audio file in the folder. ------------------------
+$MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '\.(aiff?|m4a|mp3|aac|wav|flac|ogg|oga|opus|wma)$'} | Sort-Object Name | Select-Object -First 1
+if (-not $MusicFile) {throw "No audio file was found in '$PhotoFolder'."}
 
 # -------------------------------------- Find photos. ---------------------------------------------
 $photos = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'} | Sort-Object @{Expression = {if ($_.BaseName -match '(\d{4})[-_.](\d{2})[-_.](\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
@@ -483,12 +483,12 @@ Export-ModuleMember -Function newphotoreel
 
 <#
 ## Overview
-This function will use FFMPEG to create a Facebook safe photo reel from the images and mp3 stored in a specified directory.
+This function will use FFMPEG to create a Facebook safe photo reel from the images and audio file stored in a specified directory.
 
-Usage: NewPhotoReel <Folder> -MP3SpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
+Usage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
 
-Folder:			The path to the folder containing the MP3 file and all the relevant photos.
-MP3SpeedAdjust:		The percentage of speed adjustment to apply to the MP3 file. The default is 13.
+Folder:			The path to the folder containing the audio file and all the relevant photos.
+AudioSpeedAdjust:		The percentage of speed adjustment to apply to the audio file. The default is 13.
 PhotoDuration:		The number of seconds each photo should be displayed. The default is 1.5.
 
 The following switches are all optional.
@@ -507,13 +507,13 @@ Help:			Call the full Help menu.
 
 Notes:
 ------------------------------------------------
-Adjust the speed of an MP3 so that Facebook doesn't flag a video for copyright violation.
-The script will use the first MP3 file located in the directory.
+Adjust the speed of an audio file so that Facebook doesn't flag a video for copyright violation.
+The script will use the first audio file located in the directory.
 
 ## Configuration File
 The following settings can be set for the main configuration settings to be used with FFMPEG:
 
-AudioSkip = '5'			This is the number of seconds of audio to skip at the start of the MP3 file.
+AudioSkip = '5'			This is the number of seconds of audio to skip at the start of the audio file.
 AudioFadeIn = '5'		This is the number of seconds to use to fade the audio in.
 AudioFadeOut = '5'		This is the number of seconds to use to fade the audio out.
 Volume = '100'			This is the default volume percentage to use.
@@ -560,7 +560,7 @@ Notes:
 
 • If no watermark file is provided, the default watermark.png file located in the module directory will be used.
 
-• MP3SpeedAdjust and PhotoDuration have hardcoded defaults that can be overridden via the command line, but because these are expected to be used in every instance of the script being run, no configuration items have been stored in the PSD1 file.
+• AudioSpeedAdjust and PhotoDuration have hardcoded defaults that can be overridden via the command line, but because these are expected to be used in every instance of the script being run, no configuration items have been stored in the PSD1 file.
 
 • If you're going to use a font other than the default arial.ttf, make sure that the bold and italic versions of that font use the standard naming conventions that end with "bd.ttf" and "i.ttf".
 
