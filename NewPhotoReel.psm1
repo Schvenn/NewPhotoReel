@@ -293,8 +293,8 @@ Write-Host -f yellow "Text"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "Intro text:   " -n; Write-Host -f yellow "$script:IntroText"
 Write-Host -f cyan "Outro text:   " -n; Write-Host -f yellow "$script:OutroText"
-if ($script:BannerEnabled -eq $true) {Write-Host -f cyan "Banner text:    " -n; Write-Host -f yellow "$script:BannerText`n"}
-else {Write-Host -f cyan "Banner text:    " -n; Write-Host -f white "Disabled`n"}
+if ($script:BannerEnabled -eq $true) {Write-Host -f cyan "Banner text:  " -n; Write-Host -f yellow "$script:BannerText`n"}
+else {Write-Host -f cyan "Banner text:  " -n; Write-Host -f white "Disabled`n"}
 Write-Host -f yellow "Output"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "Output File:  " -n; Write-Host -f yellow "$OutputFile"
