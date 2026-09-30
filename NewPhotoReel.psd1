@@ -1,5 +1,5 @@
 @{RootModule = 'NewPhotoReel.psm1'
-ModuleVersion = '1.5'
+ModuleVersion = '1.7'
 GUID = '5418bf05-be70-4b39-a134-d5d6ca7d16da'
 Author = 'Craig Plath'
 CompanyName = 'Plath Consulting Incorporated'
@@ -15,7 +15,7 @@ FileList = @('NewPhotoReel.psm1')
 PrivateData = @{PSData = @{Tags = @('audio', 'ffmpeg', 'jpeg', 'jpg', 'mp3', 'mp4', 'photo', 'png', 'video', 'facebook')
 LicenseUri = 'https://github.com/Schvenn/NewPhotoReel/blob/main/license.txt'
 ProjectUri = 'https://github.com/Schvenn/NewPhotoReel'
-ReleaseNotes = 'Added custom banner text to the bottom of every frame.'}
+ReleaseNotes = 'Added support for more photo and audio formats.'}
 
 AudioSkip = '5'
 AudioFadeIn = '5'
