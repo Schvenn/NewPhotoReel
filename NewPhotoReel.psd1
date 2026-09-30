@@ -12,7 +12,7 @@ VariablesToExport = @()
 AliasesToExport = @()
 FileList = @('NewPhotoReel.psm1')
 
-PrivateData = @{PSData = @{Tags = @('audio', 'ffmpeg', 'jpeg', 'jpg', 'mp3', 'mp4', 'photo', 'png', 'video', 'facebook')
+PrivateData = @{PSData = @{Tags = @('audio', 'ffmpeg', 'mp4', 'photo', 'video', 'facebook', 'instagram', 'social media', 'avif', 'bmp', 'gif', 'jfif', 'jpeg', 'jpg', 'png', 'tif', 'tiff', 'webp', 'aac', 'aif', 'aiff', 'flac', 'm4a', 'mp4', 'oga', 'ogg', 'opus', 'wav', 'wma')
 LicenseUri = 'https://github.com/Schvenn/NewPhotoReel/blob/main/license.txt'
 ProjectUri = 'https://github.com/Schvenn/NewPhotoReel'
 ReleaseNotes = 'Added support for more photo and audio formats.'}
