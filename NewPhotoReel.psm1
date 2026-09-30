@@ -185,7 +185,10 @@ Write-Host -f cyan "Banner: `t`t" -n; Write-Host -f white "Set a custom text-bas
 Write-Host -f cyan "Order: `t`t`t" -n; Write-Host -f white "Set the order to Chronological, Filename (alphabetical), or Random."
 Write-Host -f cyan "KenBurns: `t`t" -n; Write-Host -f white "Use the zoom transition made famous by documentary film maker Ken Burns."
 Write-Host -f cyan "RandomTransition: `t" -n; Write-Host -f white "Use a random transition."
-Write-Host -f cyan "Help: `t`t`t" -n; Write-Host -f white "Call the full Help menu.`n"}
+Write-Host -f cyan "Help: `t`t`t" -n; Write-Host -f white "Call the full Help menu.`n"
+Write-Host -f yellow "This script supports the following formats:`n"
+Write-Host -f cyan "image files: `t`t" -n; Write-Host -f white "avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp"
+Write-Host -f cyan "audio files:`t`t" -n; Write-Host -f white "aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma`n"}
 if ([string]::IsNullOrWhiteSpace($Folder)) {usage; return}
 
 # -------------------------------------- Resolve folder and derive names. -------------------------
@@ -488,7 +491,7 @@ This function will use FFMPEG to create a Facebook safe photo reel from the imag
 Usage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
 
 Folder:			The path to the folder containing the audio file and all the relevant photos.
-AudioSpeedAdjust:		The percentage of speed adjustment to apply to the audio file. The default is 13.
+AudioSpeedAdjust:	The percentage of speed adjustment to apply to the audio file. The default is 13.
 PhotoDuration:		The number of seconds each photo should be displayed. The default is 1.5.
 
 The following switches are all optional.
@@ -504,6 +507,11 @@ Order:			Set the order to Chronological, Filename (alphabetical), or Random.
 KenBurns:		Use the zoom transition made famous by documentary film maker Ken Burns.
 RandomTransition:	Use a random transition.
 Help:			Call the full Help menu.
+
+This script supports the following formats:
+
+image files:		avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp
+audio files:		aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma
 
 Notes:
 ------------------------------------------------
