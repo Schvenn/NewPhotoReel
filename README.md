@@ -148,7 +148,7 @@ This information updates continuously while the reel is being created.
 * At least one MP3 file is required.
 * At least one supported image file is required.
 * An optional watermark should be a transparent `.png` file.
-* Supported image formats are: `.jpg, .jpeg, .png`
+* Supported image formats are: `.avif, .bmp, .gif (non-animated), .jfif, .jpeg, .jpg, .tif .tiff, .webp`
 * FFmpeg 4.0 or newer is required.
 * The final output uses H.264 video and AAC audio.
 * The source folder name is used as the output filename.
