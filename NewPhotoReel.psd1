@@ -1,10 +1,10 @@
 @{RootModule = 'NewPhotoReel.psm1'
-ModuleVersion = '1.7'
+ModuleVersion = '1.8'
 GUID = '5418bf05-be70-4b39-a134-d5d6ca7d16da'
 Author = 'Craig Plath'
 CompanyName = 'Plath Consulting Incorporated'
 Copyright = '© Craig Plath. All rights reserved.'
-Description = 'Create a Facebook safe photo reel from the images and mp3 stored in a specific directory.'
+Description = 'Create a Facebook safe photo reel from the images and audio stored in a specific directory.'
 PowerShellVersion = '5.1'
 FunctionsToExport = @('NewPhotoReel')
 CmdletsToExport = @()
@@ -15,7 +15,7 @@ FileList = @('NewPhotoReel.psm1')
 PrivateData = @{PSData = @{Tags = @('audio', 'ffmpeg', 'mp4', 'photo', 'video', 'facebook', 'instagram', 'social media', 'avif', 'bmp', 'gif', 'jfif', 'jpeg', 'jpg', 'png', 'tif', 'tiff', 'webp', 'aac', 'aif', 'aiff', 'flac', 'm4a', 'mp4', 'oga', 'ogg', 'opus', 'wav', 'wma')
 LicenseUri = 'https://github.com/Schvenn/NewPhotoReel/blob/main/license.txt'
 ProjectUri = 'https://github.com/Schvenn/NewPhotoReel'
-ReleaseNotes = 'Added support for more photo and audio formats.'}
+ReleaseNotes = 'Added a templates directory.'}
 
 AudioSkip = '5'
 AudioFadeIn = '5'
@@ -26,6 +26,7 @@ Height = '1024'
 Width = '1024'
 FrameRate = '30'
 
+TemplateDirectory = 'Template'
 FontFile = 'C:\Windows\Fonts\arial.ttf'
 IntroText = ''
 OutroText = ''
