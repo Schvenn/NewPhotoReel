@@ -25,19 +25,19 @@ NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filen
 
 | Setting| Value|
 | --- | --- |
-|Folder|The path to the folder containing the audio file and all the relevant photos.|
-|AudioSpeedAdjust|The percentage of speed adjustment to apply to the audio file. The default is 13.|
+|Folder|The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults.|
+|AudioSpeedAdjust|The percentage of speed adjustment to apply to the audio file. The default is 0.|
 |PhotoDuration|The number of seconds each photo should be displayed. The default is 1.5.|
-|FirstPhoto|The first photo to display. This is optional.|
-|LastPhoto|The last photo to display. This is optional.|
-|Watermark|Add a transparent overlay, aligned by the bottom right corner. This is optional.|
-|Volume|Set the volume percentage.|
-|IntroText|Add a text based introduction frame.|
-|OutroText|Add a text-based final frame.|
-|BannerText|Set a custom text-based banner for use on every frame, keep as default, or turn it off.|
-|Order|Set the order to Chronological, Filename (alphabetical), or Random.|
-|KenBurns|Use the zoom transition made famous by documentary film maker Ken Burns.|
-|RandomTransition|Use a random transition.|
+|FirstPhoto|The first photo to display; defaults to the template directory, or none.|
+|LastPhoto|The last photo to display; defaults to the template directory, or none.|
+|Watermark|Define a watermark file to display. Use 'default', 'off', or specify a full path; defaults to the template directory, or none.|
+|Volume|Set the volume percentage; defaults to 100%.|
+|IntroText|Add a text based introduction frame; defaults to the PSD1 configuration, or none.|
+|OutroText|Add a text-based final frame; defaults to the PSD1 configuration, or none.|
+|BannerText|Set a custom text-based banner for use on every frame; defaults to the PSD1 configuration, or none.|
+|Order|Set the order to Chronological, Filename (alphabetical), or Random; defaults to chronological.|
+|KenBurns|Use the zoom transition made famous by documentary film maker Ken Burns. The default is off.|
+|RandomTransition|Use a random transition. The default is off.|
 |Help|Call the full Help menu.|
 
 
@@ -76,6 +76,7 @@ The module reads its configuration from `NewPhotoReel.psd1`
 |MaxPictureWidth = '1536'|This is the maximum picture width, before resize or crop.|
 |TransitionDuration = '0.5'|This is the length of time in seconds to use to fade between photos.|
 |RandomTransitions = @('fade'...|This is the permitted subset of transitions to use for the Random switch, selected from: 'fade', 'fadeblack', 'fadewhite', 'slideleft', 'slideright', 'slideup', 'slidedown', 'smoothleft', 'smoothright', 'wipeleft', 'wiperight', 'circleopen'|
+|TemplateDirectory = 'Template'|This is the directory to use for the default first and last photos, audio file and watermark. The default is the Template sub-directory under the script directory; otherwise, specify a full path.|
 |FontFile = 'C:\Windows\Fonts\arial.ttf'|This is the font file to use:|
 |IntroText = ''|This is the default text to use for the intro screen.|
 |OutroText = ''|This is the default text to use for the outro screen.|
@@ -157,16 +158,16 @@ This information updates continuously while the reel is being created.
 ---
 # Example Command Lines:
 
-This will generate a video using the default transitions, with no watermark, and no intro text, outro text or banner text:
+The example below will generate a video using the default transitions, with no watermark, and no intro text, outro text or banner text:
 ```
-newphotoreel photos -introtext '' -outrotext '' -bannertext off
+newphotoreel photos  -watermark off -introtext '' -outrotext '' -bannertext off
 ```
-This will generate a video with an intro, an outro and apply the default watermark and default banner. The first and last image are also specified, which will appear after the intro and before the outro:
+This second example will generate a video with an intro, an outro and apply the default watermark and default banner. The first and last image are also specified, which will appear after the intro and before the outro:
 ```
 newphotoreel photos -watermark default -introtext 'Summer Vacation 2026' -outrotext 'Thanks for watching!' -bannertext default -firstphoto 'camper.jpg' -lastphoto 'unpacking.jpg'
 ```
 
-This will generate a video with all the defaults specified in the configuration file, will speed up the audio file by a very fast 25% and use the Ken Burns style zoom transitions:
+This final example will generate a video with all the defaults specified in the configuration file, including any of the 4 possible files that can exist in the templates directory; will speed up the audio file by a very fast 25% and use the Ken Burns style zoom transitions:
 ```
 newphotoreel photos -audiospeedadjust 25 -kenburns
 ```
