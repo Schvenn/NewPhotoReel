@@ -181,7 +181,7 @@ if ($PSBoundParameters.ContainsKey('IntroText')) {$script:IntroText = $IntroText
 if ($PSBoundParameters.ContainsKey('OutroText')) {$script:OutroText = $OutroText}
 
 # -------------------------------------- Usage. ---------------------------------------------------
-function usage {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'sample' -OutroText 'sample' -BannerText '(custom text|default|off)' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
+function usage {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|off|watermark.png' -Volume ## -IntroText 'sample' -OutroText 'sample' -BannerText '(custom text|default|off)' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
 Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults."
 Write-Host -f yellow "`nThe following switches are all optional and if none are specified, the defaults will be used.`n"
 Write-Host -f cyan "AudioSpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the audio file. The default is 0."
@@ -502,7 +502,7 @@ Export-ModuleMember -Function newphotoreel
 ## Overview
 This function will use FFMPEG to create a Facebook safe photo reel from the images and audio file stored in a specified directory.
 
-Usage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
+Usage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|off|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
 
 Folder:			The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults.
 
