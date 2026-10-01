@@ -1,17 +1,11 @@
-function newphotoreel ([string]$Folder, [int]$AudioSpeedAdjust = 13, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [string]$Watermark, [double]$Volume = 100, [string]$IntroText, [string]$OutroText, [string]$BannerText, [ValidateSet('Chronological','Filename','Random')][string]$Order = 'Chronological', [switch]$KenBurns, [switch]$RandomTransition, [switch]$help) {# Create a Facebook safe photo reel from the images and audio file stored in a specific directory.
+function newphotoreel ([string]$Folder, [int]$AudioSpeedAdjust = 0, [double]$PhotoDuration = 1.5, [string]$FirstPhoto, [string]$LastPhoto, [string]$Watermark = 'default', [double]$Volume = 100, [string]$IntroText, [string]$OutroText, [string]$BannerText, [ValidateSet('Chronological','Filename','Random')][string]$Order = 'Chronological', [switch]$KenBurns, [switch]$RandomTransition, [switch]$help) {# Create a Facebook safe photo reel from the images and audio file stored in a specific directory.
 
-# Resolve watermark only when -Watermark is specified.
-if ($PSBoundParameters.ContainsKey('Watermark')) {if ([string]::IsNullOrWhiteSpace($Watermark) -or $Watermark -eq 'default') {$Watermark = Join-Path $PSScriptRoot 'watermark.png'}
-if (-not (Test-Path -LiteralPath $Watermark -PathType Leaf)) {throw "Watermark file was not found: $Watermark"}
-$Watermark = (Resolve-Path -LiteralPath $Watermark).Path}
-else {$Watermark = $null}
-
-# Load settings.
+# -------------------------------------- Load settings. -------------------------------------------
 function LoadConfiguration {$script:ConfigPath = Join-Path $PSScriptRoot 'NewPhotoReel.psd1'
 if (!(Test-Path $script:ConfigPath)) {throw "Config file not found at $script:ConfigPath"}
 $script:Config = Import-PowerShellDataFile -Path $script:ConfigPath
 
-# Pull config values into variables.
+# -------------------------------------- Pull config values into variables. -----------------------
 $script:Path = $script:Config.PrivateData.Path
 
 $script:Height = [int]$script:Config.PrivateData.Height
@@ -27,6 +21,8 @@ $script:AudioSkip = [int]$script:Config.PrivateData.AudioSkip
 $script:AudioFadeIn = [int]$script:Config.PrivateData.AudioFadeIn
 $script:AudioFadeOut = [int]$script:Config.PrivateData.AudioFadeOut
 $script:Volume = [double]$script:Config.PrivateData.Volume
+
+$script:TemplateDirectory = Join-Path $PSScriptRoot $script:Config.PrivateData.TemplateDirectory
 
 $script:FontFile = [string]$script:Config.PrivateData.FontFile
 $script:IntroText = [string]$script:Config.PrivateData.IntroText
@@ -48,17 +44,23 @@ $script:BannerFontSize = [int]$script:Config.PrivateData.Banner.FontSize
 $script:BannerFontStyle = [string]$script:Config.PrivateData.Banner.FontStyle}
 LoadConfiguration
 
-# Use the default font style extension formats.
+# -------------------------------------- Use the default font style extension formats. ------------
 switch ($script:BannerFontStyle.ToLower()) {'bold' {$BannerFontFile = $script:FontFile -replace '\.ttf$','bd.ttf'} 'italic' {$BannerFontFile = $script:FontFile -replace '\.ttf$','i.ttf'} default {$BannerFontFile = $script:FontFile}}
 $BannerFontFile = $BannerFontFile.Replace('\','/').Replace(':','\:')
 
-# Resolve banner text only when -BannerText is specified.
+# -------------------------------------- Resolve watermark. ----------------------------------------
+if ([string]::IsNullOrWhiteSpace($Watermark) -or $Watermark -match '(?i)^default$') {$Watermark = Join-Path $script:TemplateDirectory 'watermark.png'}
+elseif ($Watermark -match '(?i)^off$') {$Watermark = $null}
+else {$Watermark = (Resolve-Path -LiteralPath $Watermark -ErrorAction SilentlyContinue).Path}
+if ($Watermark -and -not (Test-Path -LiteralPath $Watermark -PathType Leaf)) {throw "Watermark file was not found: $Watermark"}
+
+# -------------------------------------- Resolve banner text only when -BannerText is specified. --
 if ($PSBoundParameters.ContainsKey('BannerText')) {if ($BannerText -eq 'default') {$script:BannerText = [string]$script:Config.PrivateData.Banner.Text}
 elseif ($BannerText -match '(?i)^off$') {$script:BannerEnabled = $false}
 else {$script:BannerText = $BannerText}}
 
 
-# Modify fields sent to it with proper word wrapping.
+# -------------------------------------- Modify fields sent to it with proper word wrapping. ------
 function wordwrap ($field, $maximumlinelength) {if ($null -eq $field) {return $null}
 $breakchars = ',.;?!\/ '; $wrapped = @()
 if (-not $maximumlinelength) {[int]$maximumlinelength = (100, $Host.UI.RawUI.WindowSize.Width | Measure-Object -Maximum).Maximum}
@@ -74,7 +76,7 @@ $chunk = $segment.Substring(0, $breakIndex + 1); $wrapped += $chunk; $remaining 
 if ($remaining.Length -gt 0 -or $line -eq "") {$wrapped += $remaining}}
 return ($wrapped -join "`n")}
 
-# Display a horizontal line.
+# -------------------------------------- Display a horizontal line. -------------------------------
 function line ($colour, $length, [switch]$pre, [switch]$post, [switch]$double) {if (-not $length) {[int]$length = (100, $Host.UI.RawUI.WindowSize.Width | Measure-Object -Maximum).Maximum}
 if ($length) {if ($length -lt 60) {[int]$length = 60}
 if ($length -gt $Host.UI.RawUI.BufferSize.Width) {[int]$length = $Host.UI.RawUI.BufferSize.Width}}
@@ -83,7 +85,7 @@ $character = if ($double) {"="} else {"-"}
 Write-Host -f $colour ($character * $length)
 if ($post) {Write-Host ""}}
 
-# Wrap text-card text to the configured maximum width.
+# -------------------------------------- Wrap text-card text to the configured maximum width. -----
 function WrapTextCard ($text) {if ([string]::IsNullOrWhiteSpace($text)) {return $text}
 $maximumCharacters = [Math]::Max(10,[Math]::Floor($script:TextCardMaxWidth / ($script:TextCardFontSize * 0.45)))
 $lines = @()
@@ -96,6 +98,8 @@ $remaining = $remaining.Substring($breakAt).TrimStart()}
 $lines += $remaining}
 return ($lines -join "`n")}
 
+
+# -------------------------------------- Help. ----------------------------------------------------
 function help {# Inline help.
 # Select content.
 $scripthelp = Get-Content -Raw -Path $PSCommandPath; $sections = [regex]::Matches($scripthelp, "(?im)^## (.+?)(?=\r?\n)"); $selection = $null; $lines = @(); $wrappedLines = @(); $position = 0; $pageSize = 30; $inputBuffer = ""
@@ -165,26 +169,33 @@ $AudioSpeed = ($AudioSpeedAdjust / 100) + 1
 if ($null -ne $Volume) {$script:Volume = $Volume}
 if ($script:Volume -lt 0 -or $script:Volume -gt 200) {throw "Volume must be between 0 and 200 percent."}
 
+
+# -------------------------------------- Check the templates directory for photos. -----------------
+if ($script:TemplateDirectory) {$script:TemplateDirectory = (Resolve-Path -LiteralPath $script:TemplateDirectory -ErrorAction SilentlyContinue).Path}
+if ($script:TemplateDirectory -and (Test-Path -LiteralPath $script:TemplateDirectory -PathType Container)) {$TemplateFirstPhoto = Get-ChildItem -LiteralPath $script:TemplateDirectory -File | Where-Object {$_.BaseName -eq 'FirstPhoto'} | Select-Object -First 1
+$TemplateLastPhoto = Get-ChildItem -LiteralPath $script:TemplateDirectory -File | Where-Object {$_.BaseName -eq 'LastPhoto'} | Select-Object -First 1
+$TemplateAudio = Get-ChildItem -LiteralPath $script:TemplateDirectory -File | Where-Object {$_.BaseName -eq 'Audio'} | Select-Object -First 1}
+
 # -------------------------------------- Set intro and outro text. --------------------------------
 if ($PSBoundParameters.ContainsKey('IntroText')) {$script:IntroText = $IntroText}
 if ($PSBoundParameters.ContainsKey('OutroText')) {$script:OutroText = $OutroText}
 
 # -------------------------------------- Usage. ---------------------------------------------------
 function usage {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'sample' -OutroText 'sample' -BannerText '(custom text|default|off)' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
-Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "Path to the folder containing the audio file and all the relevant photos."
-Write-Host -f cyan "AudioSpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the audio file. The default is 13."
+Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults."
+Write-Host -f yellow "`nThe following switches are all optional and if none are specified, the defaults will be used.`n"
+Write-Host -f cyan "AudioSpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the audio file. The default is 0."
 Write-Host -f cyan "PhotoDuration: `t`t" -n; Write-Host -f white "The number of seconds each photo should be displayed. The default is 1.5."
-Write-Host -f yellow "`nThe following switches are all optional.`n"
-Write-Host -f cyan "FirstPhoto: `t`t" -n; Write-Host -f white "The first photo to display."
-Write-Host -f cyan "LastPhoto: `t`t" -n; Write-Host -f white "The last photo to display."
-Write-Host -f cyan "Watermark: `t`t" -n; Write-Host -f white "Define a watermark file to display. Use 'default' or specify a full path."
-Write-Host -f cyan "Volume: `t`t" -n; Write-Host -f white "Set the volume percentage."
-Write-Host -f cyan "IntroText: `t`t" -n; Write-Host -f white "Add a text based introduction frame."
-Write-Host -f cyan "OutroText: `t`t" -n; Write-Host -f white "Add a text-based final frame."
-Write-Host -f cyan "Banner: `t`t" -n; Write-Host -f white "Set a custom text-based banner for use on every frame, keep as default, or turn it off."
-Write-Host -f cyan "Order: `t`t`t" -n; Write-Host -f white "Set the order to Chronological, Filename (alphabetical), or Random."
-Write-Host -f cyan "KenBurns: `t`t" -n; Write-Host -f white "Use the zoom transition made famous by documentary film maker Ken Burns."
-Write-Host -f cyan "RandomTransition: `t" -n; Write-Host -f white "Use a random transition."
+Write-Host -f cyan "FirstPhoto: `t`t" -n; Write-Host -f white "The first photo to display; defaults to the template directory, or none."
+Write-Host -f cyan "LastPhoto: `t`t" -n; Write-Host -f white "The last photo to display; defaults to the template directory, or none."
+Write-Host -f cyan "Watermark: `t`t" -n; Write-Host -f white "Define a watermark file to display. Use 'default', 'off', or specify a full path; defaults to the template directory, or none."
+Write-Host -f cyan "Volume: `t`t" -n; Write-Host -f white "Set the volume percentage; defaults to 100%."
+Write-Host -f cyan "IntroText: `t`t" -n; Write-Host -f white "Add a text based introduction frame; defaults to the PSD1 configuration, or none."
+Write-Host -f cyan "OutroText: `t`t" -n; Write-Host -f white "Add a text-based final frame; defaults to the PSD1 configuration, or none."
+Write-Host -f cyan "Banner: `t`t" -n; Write-Host -f white "Set a custom text-based banner for use on every frame; defaults to the PSD1 configuration, or none."
+Write-Host -f cyan "Order: `t`t`t" -n; Write-Host -f white "Set the order to Chronological, Filename (alphabetical), or Random; defaults to chronological."
+Write-Host -f cyan "KenBurns: `t`t" -n; Write-Host -f white "Use the zoom transition made famous by documentary film maker Ken Burns. The default is off."
+Write-Host -f cyan "RandomTransition: `t" -n; Write-Host -f white "Use a random transition. The default is off."
 Write-Host -f cyan "Help: `t`t`t" -n; Write-Host -f white "Call the full Help menu.`n"
 Write-Host -f yellow "This script supports the following formats:`n"
 Write-Host -f cyan "image files: `t`t" -n; Write-Host -f white "avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp"
@@ -221,9 +232,10 @@ if ($MaxPictureWidth -le 0 -or $MaxPictureHeight -le 0) {throw 'MaxPictureWidth 
 if ($FrameRate -le 0) {throw 'FrameRate must be greater than zero.'}
 if ($AudioSpeed -le 0) {throw 'AudioSpeed must be greater than zero.'}
 
-# -------------------------------------- Find the first audio file in the folder. ------------------------
-$MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '\.(aiff?|m4a|mp3|aac|wav|flac|ogg|oga|opus|wma)$'} | Sort-Object Name | Select-Object -First 1
-if (-not $MusicFile) {throw "No audio file was found in '$PhotoFolder'."}
+# -------------------------------------- Find the audio file. -----------------------------------
+if ($TemplateAudio) {$MusicFile = $TemplateAudio}
+else {$MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '\.(m4a|mp3|aac|wav|flac|ogg|oga|opus|wma|aiff?)$'} | Sort-Object Name | Select-Object -First 1}
+if (-not $MusicFile) {throw "No audio file was found in '$PhotoFolder' or '$script:TemplateDirectory'."}
 
 # -------------------------------------- Find photos. ---------------------------------------------
 $photos = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'} | Sort-Object @{Expression = {if ($_.BaseName -match '(\d{4})[-_.](\d{2})[-_.](\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
@@ -231,6 +243,8 @@ catch {$_.LastWriteTime}}
 elseif ($_.BaseName -match '(\d{4})(\d{2})(\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
 catch {$_.LastWriteTime}}
 else {$_.LastWriteTime}}}, Name
+if (-not $PSBoundParameters.ContainsKey('FirstPhoto') -and $TemplateFirstPhoto) {$FirstPhoto = $TemplateFirstPhoto.FullName; $photos = @($photos + $TemplateFirstPhoto)}
+if (-not $PSBoundParameters.ContainsKey('LastPhoto') -and $TemplateLastPhoto) {$LastPhoto = $TemplateLastPhoto.FullName; $photos = @($photos + $TemplateLastPhoto)}
 
 # -------------------------------------- Apply ordering, then First, Last photo repositions. ------
 if ($Order -eq 'Filename') {$photos = @($photos | Sort-Object Name)}
@@ -278,11 +292,11 @@ $audioFadeOutStart = [Math]::Max(0, $videoDuration - $AudioFadeOut)
 
 # -------------------------------------- Display output settings. ---------------------------------
 function displayoutputsettings {Write-Host -f cyan "Source Folder:   " -n; Write-Host -f yellow "$PhotoFolder"
-Write-Host -f cyan "Watermark:       " -n; Write-Host -f yellow "$Watermark`n"
+Write-Host -f cyan "Watermark:       " -n; Write-Host -f yellow "$(if ($Watermark) {Split-Path $Watermark -Leaf})`n"
 Write-Host -f yellow "Pictures"
 Write-Host -f yellow ("-" * 50)
-Write-Host -f cyan "First Photo:  " -n; Write-Host -f yellow "$FirstPhoto"
-Write-Host -f cyan "Last Photo:   " -n; Write-Host -f yellow "$LastPhoto"
+Write-Host -f cyan "First Photo:  " -n; Write-Host -f yellow "$(if ($FirstPhoto) {Split-Path $FirstPhoto -Leaf})"
+Write-Host -f cyan "Last Photo:   " -n; Write-Host -f yellow "$(if ($LastPhoto) {Split-Path $LastPhoto -Leaf})"
 Write-Host -f cyan "Photos:       " -n; Write-Host -f white "$photoCount"
 Write-Host -f cyan "Photo timing: " -n; Write-Host -f white "$PhotoDuration sec"
 Write-Host -f cyan "Transition:   " -n; Write-Host -f white "$TransitionDuration sec"
@@ -490,22 +504,22 @@ This function will use FFMPEG to create a Facebook safe photo reel from the imag
 
 Usage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
 
-Folder:			The path to the folder containing the audio file and all the relevant photos.
-AudioSpeedAdjust:	The percentage of speed adjustment to apply to the audio file. The default is 13.
+Folder:			The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults.
+
+The following switches are all optional and if none are specified, the defaults will be used.
+
+AudioSpeedAdjust:	The percentage of speed adjustment to apply to the audio file. The default is 0.
 PhotoDuration:		The number of seconds each photo should be displayed. The default is 1.5.
-
-The following switches are all optional.
-
-FirstPhoto:		The first photo to display.
-LastPhoto:		The last photo to display.
-Watermark:		Define a watermark file to display. Use 'default' or specify a full path.
-Volume:			Set the volume percentage.
-IntroText:		Add a text based introduction frame.
-OutroText:		Add a text-based final frame.
-Banner:			Set a custom text-based banner for use on every frame, keep as default, or turn it off.
-Order:			Set the order to Chronological, Filename (alphabetical), or Random.
-KenBurns:		Use the zoom transition made famous by documentary film maker Ken Burns.
-RandomTransition:	Use a random transition.
+FirstPhoto:		The first photo to display; defaults to the template directory, or none.
+LastPhoto:		The last photo to display; defaults to the template directory, or none.
+Watermark:		Define a watermark file to display. Use 'default', 'off', or specify a full path; defaults to the template directory, or none.
+Volume:			Set the volume percentage; defaults to 100%.
+IntroText:		Add a text based introduction frame; defaults to the PSD1 configuration, or none.
+OutroText:		Add a text-based final frame; defaults to the PSD1 configuration, or none.
+Banner:			Set a custom text-based banner for use on every frame; defaults to the PSD1 configuration, or none.
+Order:			Set the order to Chronological, Filename (alphabetical), or Random; defaults to chronological.
+KenBurns:		Use the zoom transition made famous by documentary film maker Ken Burns. The default is off.
+RandomTransition:	Use a random transition. The default is off.
 Help:			Call the full Help menu.
 
 This script supports the following formats:
@@ -537,6 +551,10 @@ TransitionDuration = '0.5'	This is the length of time in seconds to use to fade 
 # This is the permitted subset of transitions to use for the Random switch.
 RandomTransitions = @('fade','fadeblack','fadewhite','smoothleft','smoothright','circleopen')
 
+# This is the directory to use for the default first and last photos, audio file and watermark.
+# The default is the Template sub-directory under the script directory; otherwise, specify a full path.
+TemplateDirectory = 'Template'
+
 # This is the font file to use:
 FontFile = 'C:\Windows\Fonts\arial.ttf'
 
@@ -565,8 +583,6 @@ FontStyle = 'bold'}		This is the font style (normal|bold|italic).
 Notes:
 ------------------------------------------------
 • All available transitions include: 'fade', 'fadeblack', 'fadewhite', 'slideleft', 'slideright', 'slideup', 'slidedown', 'smoothleft', 'smoothright', 'wipeleft', 'wiperight', 'circleopen'
-
-• If no watermark file is provided, the default watermark.png file located in the module directory will be used.
 
 • AudioSpeedAdjust and PhotoDuration have hardcoded defaults that can be overridden via the command line, but because these are expected to be used in every instance of the script being run, no configuration items have been stored in the PSD1 file.
 
