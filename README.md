@@ -20,7 +20,7 @@ A PowerShell module that creates a social media friendly photo reel from a colle
 # Usage
 
 ```
-NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'filename.ext'  -Volume ## -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help
+NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|off|filename.ext'  -Volume ## -IntroText 'sample' -OutroText 'sample' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help
 ```
 
 | Setting| Value|
