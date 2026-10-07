@@ -1,6 +1,6 @@
 # NewPhotoReel
 
-A PowerShell module that creates a social media friendly photo reel from a collection of photos (avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp) and an audio file (aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma).
+A PowerShell module that creates a social media friendly photo reel from a collection of photos (avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp), other video files (mp4), and an audio file (aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma).
 
 `NewPhotoReel` uses **FFmpeg** to:
 
@@ -150,6 +150,7 @@ This information updates continuously while the reel is being created.
 * At least one supported image file is required.
 * An optional watermark should be a transparent `.png` file.
 * Supported image formats are: `.avif, .bmp, .gif (non-animated), .jfif, .jpeg, .jpg, .png, .tif .tiff, .webp`
+* Supported video formats are: `.mp4`
 * Supported audio formats are: `.aac, .aif, .aiff, .flac, .m4a, .mp4, .oga, .ogg, .opus, .wav, .wma`
 * FFmpeg 4.0 or newer is required.
 * The final output uses H.264 video and AAC audio.
