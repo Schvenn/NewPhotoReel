@@ -59,7 +59,6 @@ if ($PSBoundParameters.ContainsKey('BannerText')) {if ($BannerText -eq 'default'
 elseif ($BannerText -match '(?i)^off$') {$script:BannerEnabled = $false}
 else {$script:BannerText = $BannerText}}
 
-
 # -------------------------------------- Modify fields sent to it with proper word wrapping. ------
 function wordwrap ($field, $maximumlinelength) {if ($null -eq $field) {return $null}
 $breakchars = ',.;?!\/ '; $wrapped = @()
@@ -97,7 +96,6 @@ $lines += $remaining.Substring(0,$breakAt).TrimEnd()
 $remaining = $remaining.Substring($breakAt).TrimStart()}
 $lines += $remaining}
 return ($lines -join "`n")}
-
 
 # -------------------------------------- Help. ----------------------------------------------------
 function help {# Inline help.
@@ -165,6 +163,40 @@ $env:Path += ";$script:Path"
 $PhotoDuration = [Math]::Round($PhotoDuration, 1)
 $AudioSpeed = ($AudioSpeedAdjust / 100) + 1
 
+$ffmpeg = (Get-Command ffmpeg.exe -CommandType Application -ErrorAction SilentlyContinue).Path
+if (-not $ffmpeg) {throw 'FFmpeg.exe was not found.'}
+
+$ffprobe = (Get-Command ffprobe.exe -CommandType Application -ErrorAction SilentlyContinue).Path
+if (-not $ffprobe) {throw 'FFprobe.exe was not found.'}
+
+# -------------------------------------- Find FFmpeg and validate settings. -----------------------
+$ffmpegCandidates = @('C:\Tools\ffmpeg\bin\ffmpeg.exe', 'C:\Program Files\ffmpeg\bin\ffmpeg.exe')
+$ffmpeg = $ffmpegCandidates | Where-Object {Test-Path $_} | Select-Object -First 1
+if (-not $ffmpeg) {$ffmpegCommand = Get-Command ffmpeg.exe -ErrorAction SilentlyContinue
+if ($ffmpegCommand) {$ffmpeg = $ffmpegCommand.Source}}
+if (-not $ffmpeg) {throw 'FFmpeg.exe was not found.'}
+$ffprobe = Join-Path (Split-Path $ffmpeg -Parent) 'ffprobe.exe'
+if (-not (Test-Path -LiteralPath $ffprobe)) {$ffprobeCommand = Get-Command ffprobe.exe -ErrorAction SilentlyContinue
+if ($ffprobeCommand) {$ffprobe = $ffprobeCommand.Source}}
+cls
+$ffmpegVersion = & $ffmpeg -version 2>&1 | Select-Object -First 1
+Write-Host -f yellow "`nNew Facebook Friendly Photo Reel:"
+Write-Host -f yellow ("-" * 100)
+Write-Host -f white $ffmpegVersion
+Write-Host -f cyan "`nFFMPEG Location: " -n; Write-Host -f yellow "$ffmpeg"
+Write-Host -f cyan "FFProbe Location: " -n; Write-Host -f yellow "$ffprobe`n"
+Write-Host -f yellow "Source"
+Write-Host -f yellow ("-" * 50)
+if ($ffmpegVersion -match 'ffmpeg version (\d+)\.') {if ([int]$Matches[1] -lt 4) {throw 'FFmpeg 4.0 or newer is required.'}}
+if ($PhotoDuration -le 0) {throw 'PhotoDuration must be greater than zero.'}
+if ($TransitionDuration -lt 0) {throw 'TransitionDuration cannot be negative.'}
+if ($TransitionDuration -ge $PhotoDuration) {throw 'TransitionDuration must be less than PhotoDuration.'}
+if ($Width -le 0 -or $Height -le 0) {throw 'Width and Height must be greater than zero.'}
+if ($script:BannerHeight -lt 1 -or $script:BannerHeight -ge $Height) {throw "BannerHeight must be greater than zero and less than the video height."}
+if ($MaxPictureWidth -le 0 -or $MaxPictureHeight -le 0) {throw 'MaxPictureWidth and MaxPictureHeight must be greater than zero.'}
+if ($FrameRate -le 0) {throw 'FrameRate must be greater than zero.'}
+if ($AudioSpeed -le 0) {throw 'AudioSpeed must be greater than zero.'}
+
 # -------------------------------------- Set volume. ----------------------------------------------
 if ($null -ne $Volume) {$script:Volume = $Volume}
 if ($script:Volume -lt 0 -or $script:Volume -gt 200) {throw "Volume must be between 0 and 200 percent."}
@@ -182,7 +214,7 @@ if ($PSBoundParameters.ContainsKey('OutroText')) {$script:OutroText = $OutroText
 
 # -------------------------------------- Usage. ---------------------------------------------------
 function usage {Write-Host -f cyan "`nUsage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|off|watermark.png' -Volume ## -IntroText 'sample' -OutroText 'sample' -BannerText '(custom text|default|off)' -Order 'Chronological/Filename/Random' -KenBurns -RandomTransition -Help"
-Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults."
+Write-Host -f cyan "`nFolder: `t`t" -n; Write-Host -f white "The path to the folder containing the audio file and all the relevant media files, but a template directory or the PSD1 file can define some defaults."
 Write-Host -f yellow "`nThe following switches are all optional and if none are specified, the defaults will be used.`n"
 Write-Host -f cyan "AudioSpeedAdjust: `t" -n; Write-Host -f white "The percentage of speed adjustment to apply to the audio file. The default is 0."
 Write-Host -f cyan "PhotoDuration: `t`t" -n; Write-Host -f white "The number of seconds each photo should be displayed. The default is 1.5."
@@ -199,6 +231,7 @@ Write-Host -f cyan "RandomTransition: `t" -n; Write-Host -f white "Use a random 
 Write-Host -f cyan "Help: `t`t`t" -n; Write-Host -f white "Call the full Help menu.`n"
 Write-Host -f yellow "This script supports the following formats:`n"
 Write-Host -f cyan "image files: `t`t" -n; Write-Host -f white "avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp"
+Write-Host -f cyan "video files: `t`t" -n; Write-Host -f white "mp4"
 Write-Host -f cyan "audio files:`t`t" -n; Write-Host -f white "aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma`n"}
 if ([string]::IsNullOrWhiteSpace($Folder)) {usage; return}
 
@@ -208,73 +241,73 @@ $folderInfo = [System.IO.DirectoryInfo]$PhotoFolder
 $folderName = $folderInfo.Name
 $OutputFile = "$folderName.mp4"
 
-# -------------------------------------- Find FFmpeg and validate settings. -----------------------
-$ffmpegCandidates = @('C:\Tools\ffmpeg\bin\ffmpeg.exe', 'C:\Program Files\ffmpeg\bin\ffmpeg.exe')
-$ffmpeg = $ffmpegCandidates | Where-Object {Test-Path $_} | Select-Object -First 1
-if (-not $ffmpeg) {$ffmpegCommand = Get-Command ffmpeg.exe -ErrorAction SilentlyContinue
-if ($ffmpegCommand) {$ffmpeg = $ffmpegCommand.Source}}
-if (-not $ffmpeg) {throw 'FFmpeg.exe was not found.'}
-cls
-$ffmpegVersion = & $ffmpeg -version 2>&1 | Select-Object -First 1
-Write-Host -f yellow "`nNew Facebook Friendly Photo Reel:"
-Write-Host -f yellow ("-" * 100)
-Write-Host -f white $ffmpegVersion
-Write-Host -f yellow "`nSource"
-Write-Host -f yellow ("-" * 50)
-Write-Host -f cyan "FFMPEG Location: " -n; Write-Host -f yellow "$ffmpeg"
-if ($ffmpegVersion -match 'ffmpeg version (\d+)\.') {if ([int]$Matches[1] -lt 4) {throw 'FFmpeg 4.0 or newer is required.'}}
-if ($PhotoDuration -le 0) {throw 'PhotoDuration must be greater than zero.'}
-if ($TransitionDuration -lt 0) {throw 'TransitionDuration cannot be negative.'}
-if ($TransitionDuration -ge $PhotoDuration) {throw 'TransitionDuration must be less than PhotoDuration.'}
-if ($Width -le 0 -or $Height -le 0) {throw 'Width and Height must be greater than zero.'}
-if ($script:BannerHeight -lt 1 -or $script:BannerHeight -ge $Height) {throw "BannerHeight must be greater than zero and less than the video height."}
-if ($MaxPictureWidth -le 0 -or $MaxPictureHeight -le 0) {throw 'MaxPictureWidth and MaxPictureHeight must be greater than zero.'}
-if ($FrameRate -le 0) {throw 'FrameRate must be greater than zero.'}
-if ($AudioSpeed -le 0) {throw 'AudioSpeed must be greater than zero.'}
+$MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(aac|aif|aiff|flac|m4a|mp3|oga|ogg|opus|wav|wma)$'} | Select-Object -First 1
+if (-not $MusicFile -and $TemplateAudio) {$MusicFile = $TemplateAudio}
+if (-not $MusicFile) {throw "No audio file was found in '$PhotoFolder' or the template directory."}
 
-# -------------------------------------- Find the audio file. -----------------------------------
-if ($TemplateAudio) {$MusicFile = $TemplateAudio}
-else {$MusicFile = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '\.(m4a|mp3|aac|wav|flac|ogg|oga|opus|wma|aiff?)$'} | Sort-Object Name | Select-Object -First 1}
-if (-not $MusicFile) {throw "No audio file was found in '$PhotoFolder' or '$script:TemplateDirectory'."}
+# -------------------------------------- Find photos and additional MP4 videos. -------------------
+$MergeVideos = @(Get-ChildItem -LiteralPath $PhotoFolder -Filter '*.mp4' -File | Where-Object {$_.Name -ne $OutputFile})
+$MergeMP4 = $MergeVideos.Count -gt 0
 
-# -------------------------------------- Find photos. ---------------------------------------------
-$photos = Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'} | Sort-Object @{Expression = {if ($_.BaseName -match '(\d{4})[-_.](\d{2})[-_.](\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
+$photos = @(Get-ChildItem -LiteralPath $PhotoFolder -File | Where-Object {$_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'})
+$media = @($photos + $MergeVideos)
+
+# -------------------------------------- Sort all media chronologically. --------------------------
+$media = @($media | Sort-Object @{Expression = {if ($_.BaseName -match '(\d{4})[-_.](\d{2})[-_.](\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
 catch {$_.LastWriteTime}}
 elseif ($_.BaseName -match '(\d{4})(\d{2})(\d{2})') {try {[datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])}
 catch {$_.LastWriteTime}}
-else {$_.LastWriteTime}}}, Name
-if (-not $PSBoundParameters.ContainsKey('FirstPhoto') -and $TemplateFirstPhoto) {$FirstPhoto = $TemplateFirstPhoto.FullName; $photos = @($photos + $TemplateFirstPhoto)}
-if (-not $PSBoundParameters.ContainsKey('LastPhoto') -and $TemplateLastPhoto) {$LastPhoto = $TemplateLastPhoto.FullName; $photos = @($photos + $TemplateLastPhoto)}
+else {$_.LastWriteTime}}}, Name)
 
-# -------------------------------------- Apply ordering, then First, Last photo repositions. ------
-if ($Order -eq 'Filename') {$photos = @($photos | Sort-Object Name)}
-elseif ($Order -eq 'Random') {$photos = @($photos | Sort-Object {Get-Random})}
+# -------------------------------------- Add template photos. -------------------------------------
+if (-not $PSBoundParameters.ContainsKey('FirstPhoto') -and $TemplateFirstPhoto) {$FirstPhoto = $TemplateFirstPhoto.FullName; $media = @($media + $TemplateFirstPhoto)}
+if (-not $PSBoundParameters.ContainsKey('LastPhoto') -and $TemplateLastPhoto) {$LastPhoto = $TemplateLastPhoto.FullName; $media = @($media + $TemplateLastPhoto)}
 
-# Reorder photos when FirstPhoto/LastPhoto are specified.
-$photos = @($photos | Where-Object {$_ -and $_.FullName})
+# -------------------------------------- Apply ordering. -------------------------------------------
+if ($Order -eq 'Filename') {$media = @($media | Sort-Object Name)}
+elseif ($Order -eq 'Random') {$media = @($media | Sort-Object {Get-Random})}
+
+# -------------------------------------- Reposition FirstPhoto and LastPhoto. ---------------------
+$media = @($media | Where-Object {$_ -and $_.FullName})
 $firstPhotoObject = $null
 $lastPhotoObject = $null
+
 if ($FirstPhoto) {$firstName = Split-Path $FirstPhoto -Leaf
-$firstPhotoObject = $photos | Where-Object {$_.Name -eq $firstName} | Select-Object -First 1
+$firstPhotoObject = $media | Where-Object {$_.Name -eq $firstName -and $_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'} | Select-Object -First 1
 if (-not $firstPhotoObject) {throw "FirstPhoto '$firstName' was not found in '$PhotoFolder'."}
-$photos = @($photos | Where-Object {$_.FullName -ne $firstPhotoObject.FullName})}
+$media = @($media | Where-Object {$_.FullName -ne $firstPhotoObject.FullName})}
+
 if ($LastPhoto) {$lastName = Split-Path $LastPhoto -Leaf
-$lastPhotoObject = $photos | Where-Object {$_.Name -eq $lastName} | Select-Object -First 1
+$lastPhotoObject = $media | Where-Object {$_.Name -eq $lastName -and $_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'} | Select-Object -First 1
 
 # If FirstPhoto and LastPhoto are the same file, get it from the original list.
 if (-not $lastPhotoObject -and $firstPhotoObject -and $firstPhotoObject.Name -eq $lastName) {$lastPhotoObject = $firstPhotoObject}
 if (-not $lastPhotoObject) {throw "LastPhoto '$lastName' was not found in '$PhotoFolder'."}
-$photos = @($photos | Where-Object {$_.FullName -ne $lastPhotoObject.FullName})}
+$media = @($media | Where-Object {$_.FullName -ne $lastPhotoObject.FullName})}
 
-# Put FirstPhoto first, then LastPhoto last.
-$reorderedPhotos = @()
-if ($firstPhotoObject) {$reorderedPhotos += $firstPhotoObject}
-$reorderedPhotos += $photos
-if ($lastPhotoObject -and $lastPhotoObject.FullName -ne $firstPhotoObject.FullName) {$reorderedPhotos += $lastPhotoObject}
-$photos = @($reorderedPhotos)
+# -------------------------------------- Put FirstPhoto first, then LastPhoto last. ---------------
+$reorderedMedia = @()
+if ($firstPhotoObject) {$reorderedMedia += $firstPhotoObject}
+$reorderedMedia += $media
+if ($lastPhotoObject -and $lastPhotoObject.FullName -ne $firstPhotoObject.FullName) {$reorderedMedia += $lastPhotoObject}
+$media = @($reorderedMedia)
+
+$photos = @($media | Where-Object {$_.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$'})
+$MergeVideos = @($media | Where-Object {$_.Extension -ieq '.mp4'})
 $photoCount = $photos.Count
 
-# -------------------------------------- Set effective picture size. -------------------------00000
+# -------------------------------------- Get MP4 durations. ---------------------------------------
+$mergeVideoDurations = @{}
+$mergeVideoDuration = 0
+if ($MergeVideos.Count -gt 0) {foreach ($video in $MergeVideos) {$duration = & $ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $video.FullName 2>$null
+if ($duration -match '^\d+(\.\d+)?$') {$mergeVideoDurations[$video.FullName] = [double]$duration; $mergeVideoDuration += [double]$duration}
+else {throw "Unable to determine the duration of '$($video.Name)'."}}}
+
+$mediaDurations = @()
+foreach ($item in $media) {if ($item.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$') {$mediaDurations += $PhotoDuration}
+else {$mediaDurations += $mergeVideoDurations[$item.FullName]}}
+
+# -------------------------------------- Set effective picture size. ------------------------------
 $effectiveMaxWidth = [Math]::Min($MaxPictureWidth, $Width)
 $effectiveMaxHeight = [Math]::Min($MaxPictureHeight, $Height)
 
@@ -283,7 +316,10 @@ $photoVideoDuration = $photoCount * $PhotoDuration
 $clipDuration = $PhotoDuration + $TransitionDuration
 $introDuration = if ([string]::IsNullOrWhiteSpace($script:IntroText)) {0} else {$script:TextCardDuration}
 $outroDuration = if ([string]::IsNullOrWhiteSpace($script:OutroText)) {0} else {$script:TextCardDuration}
-$videoDuration = $introDuration + $photoVideoDuration + $outroDuration
+$mediaCount = $media.Count
+$mediaVideoDuration = 0
+if ($mediaCount -gt 0) {$mediaVideoDuration = (($mediaDurations | Measure-Object -Sum).Sum) - (($mediaCount - 1) * $TransitionDuration)}
+$videoDuration = $introDuration + $mediaVideoDuration + $outroDuration
 if ($introDuration -gt 0) {$videoDuration -= $TransitionDuration}
 if ($outroDuration -gt 0) {$videoDuration -= $TransitionDuration}
 
@@ -291,16 +327,20 @@ if ($outroDuration -gt 0) {$videoDuration -= $TransitionDuration}
 $audioFadeOutStart = [Math]::Max(0, $videoDuration - $AudioFadeOut)
 
 # -------------------------------------- Display output settings. ---------------------------------
-function displayoutputsettings {Write-Host -f cyan "Source Folder:   " -n; Write-Host -f yellow "$PhotoFolder"
-Write-Host -f cyan "Watermark:       " -n; Write-Host -f yellow "$(if ($Watermark) {Split-Path $Watermark -Leaf})`n"
+
+function displayoutputsettings {Write-Host -f cyan "Source Folder:   " -n; Write-Host -f yellow "$PhotoFolder`n"
 Write-Host -f yellow "Pictures"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "First Photo:  " -n; Write-Host -f yellow "$(if ($FirstPhoto) {Split-Path $FirstPhoto -Leaf})"
 Write-Host -f cyan "Last Photo:   " -n; Write-Host -f yellow "$(if ($LastPhoto) {Split-Path $LastPhoto -Leaf})"
+Write-Host -f cyan "Watermark:    " -n; Write-Host -f yellow "$(if ($Watermark) {Split-Path $Watermark -Leaf})`n"
 Write-Host -f cyan "Photos:       " -n; Write-Host -f white "$photoCount"
 Write-Host -f cyan "Photo timing: " -n; Write-Host -f white "$PhotoDuration sec"
 Write-Host -f cyan "Transition:   " -n; Write-Host -f white "$TransitionDuration sec"
 Write-Host -f cyan "Order:        " -n; Write-Host -f white "$Order`n"
+Write-Host -f yellow "Video Files"
+Write-Host -f yellow ("-" * 50)
+Write-Host -f cyan "Merged Videos:" -n; Write-Host -f yellow "`t$($MergeVideos.Count)`n"
 Write-Host -f yellow "Audio"
 Write-Host -f yellow ("-" * 50)
 Write-Host -f cyan "Audio:        " -n; Write-Host -f yellow "$($MusicFile.Name)"
@@ -329,9 +369,14 @@ $ffmpegArgs.Add($clipDuration.ToString([System.Globalization.CultureInfo]::Invar
 $ffmpegArgs.Add('-i')
 $ffmpegArgs.Add($photo.FullName)}
 
+# -------------------------------------- Add additional MP4 video inputs. --------------------------
+foreach ($video in $MergeVideos) {$ffmpegArgs.Add('-i')
+$ffmpegArgs.Add($video.FullName)}
+
 # -------------------------------------- Add intro and outro text card inputs. --------------------
-$introIndex = $photoCount
-$outroIndex = $photoCount + [int]($introDuration -gt 0)
+$mergeVideoIndex = $photoCount
+$introIndex = $photoCount + $MergeVideos.Count
+$outroIndex = $introIndex + [int]($introDuration -gt 0)
 if ($introDuration -gt 0) {$ffmpegArgs.Add('-f')
 $ffmpegArgs.Add('lavfi')
 $ffmpegArgs.Add('-i')
@@ -342,7 +387,7 @@ $ffmpegArgs.Add('-i')
 $ffmpegArgs.Add("color=c=$($script:TextCardBackground):s=${Width}x${Height}:r=${FrameRate}:d=$outroDuration")}
 
 # -------------------------------------- Add watermark image. -------------------------------------
-$watermarkIndex = $photoCount + [int]($introDuration -gt 0) + [int]($outroDuration -gt 0)
+$watermarkIndex = $photoCount + $MergeVideos.Count + [int]($introDuration -gt 0) + [int]($outroDuration -gt 0)
 if ($Watermark) {if (-not (Test-Path -LiteralPath $Watermark -PathType Leaf)) {throw "Watermark file was not found: $Watermark"}
 $ffmpegArgs.Add('-loop')
 $ffmpegArgs.Add('1')
@@ -350,7 +395,7 @@ $ffmpegArgs.Add('-i')
 $ffmpegArgs.Add((Resolve-Path -LiteralPath $Watermark).Path)}
 
 # -------------------------------------- Loop audio as often as required. -------------------------
-$audioIndex = $photoCount + [int]($introDuration -gt 0) + [int]($outroDuration -gt 0) + [int]([bool]$Watermark)
+$audioIndex = $photoCount + $MergeVideos.Count + [int]($introDuration -gt 0) + [int]($outroDuration -gt 0) + [int]([bool]$Watermark)
 $ffmpegArgs.Add('-stream_loop')
 $ffmpegArgs.Add('-1')
 $ffmpegArgs.Add('-i')
@@ -380,8 +425,8 @@ $filter += "[v${i}]"
 $filterParts.Add($filter)}
 
 # -------------------------------------- Build intro and outro text cards. ------------------------
-$introIndex = $photoCount
-$outroIndex = $photoCount + [int]($introDuration -gt 0)
+$introIndex = $photoCount + $MergeVideos.Count
+$outroIndex = $introIndex + [int]($introDuration -gt 0)
 $fontFile = $script:FontFile.Replace('\','/').Replace(':','\:')
 if ($introDuration -gt 0 -or $outroDuration -gt 0) {if (-not (Test-Path -LiteralPath $script:FontFile -PathType Leaf)) {throw "Font file was not found: $script:FontFile"}}
 if ($introDuration -gt 0) {$introTextFile = Join-Path $env:TEMP "NewPhotoReel_intro_$PID.txt"
@@ -395,35 +440,41 @@ $outroFilterText = WrapTextCard $script:OutroText
 $outroTextPath = (Resolve-Path -LiteralPath $outroTextFile).Path.Replace('\','/').Replace(':','\:')
 $filterParts.Add("[${outroIndex}:v]drawtext=fontfile='$fontFile':textfile='$outroTextPath':fontcolor=white:fontsize=$($script:TextCardFontSize):line_spacing=10:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p,setsar=1,setpts=PTS-STARTPTS,fps=${FrameRate}[outro]")}
 
-# -------------------------------------- Build crossfade chain. -----------------------------------
-if ($photoCount -eq 1) {$filterParts.Add("[v0]trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS,fps=${FrameRate},settb=1/${FrameRate}[photobase]")}
-else {$previous = '[v0]'
-for ($i = 1; $i -lt $photoCount; $i++) {$offset = $i * $PhotoDuration
-$outputLabel = "[x${i}]"
-$xfade = $previous
-$xfade += "[v${i}]"
-$transition = 'fade'
-if ($RandomTransition -and -not $KenBurns -and $script:RandomTransitions.Count -gt 0) {$transition = $script:RandomTransitions | Get-Random}
-$xfade += "xfade=transition=$transition"
-$xfade += ":duration=${TransitionDuration}"
-$xfade += ":offset=${offset}"
-$xfade += $outputLabel
-$filterParts.Add($xfade)
-$previous = $outputLabel}
-$filterParts.Add("${previous}trim=duration=${photoVideoDuration},setpts=PTS-STARTPTS,fps=${FrameRate},settb=1/${FrameRate}[photobase]")}
+# -------------------------------------- Build media filter chain. -------------------------------
+$mediaLabels = @()
+$photoIndex = 0
+$videoIndex = 0
+
+foreach ($item in $media) {if ($item.Extension -match '^\.(avif|bmp|gif|j(fif|pe?g)|png|tiff?|webp)$') {$mediaLabel = "[m$($mediaLabels.Count)]"
+$mediaLabels += $mediaLabel
+$filterParts.Add("[v${photoIndex}]setpts=PTS-STARTPTS${mediaLabel}")
+$photoIndex++}
+else {$mediaLabel = "[m$($mediaLabels.Count)]"
+$mediaLabels += $mediaLabel
+$inputIndex = $photoCount + $videoIndex
+$filterParts.Add("[${inputIndex}:v]scale=${Width}:${Height}:force_original_aspect_ratio=decrease,pad=${Width}:${Height}:(ow-iw)/2:(oh-ih)/2,fps=${FrameRate},format=yuv420p,setsar=1,settb=1/${FrameRate},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${TransitionDuration}${mediaLabel}")
+$videoIndex++}}
+
+if ($mediaCount -eq 1) {$filterParts.Add("${mediaLabels[0]}trim=duration=$($mediaDurations[0]),setpts=PTS-STARTPTS,fps=${FrameRate},settb=1/${FrameRate}[photobase]")}
+else {$previous = $mediaLabels[0]
+$offset = [double]$mediaDurations[0] - $TransitionDuration
+for ($i = 1; $i -lt $mediaCount; $i++) {$outputLabel = "[x$i]"
+$filterParts.Add("${previous}$($mediaLabels[$i])xfade=transition=fade:duration=${TransitionDuration}:offset=$offset$outputLabel")
+$previous = $outputLabel
+$offset += [double]$mediaDurations[$i] - $TransitionDuration}
+$filterParts.Add("${previous}setpts=PTS-STARTPTS,fps=${FrameRate},settb=1/${FrameRate}[photobase]")}
 
 # -------------------------------------- Add intro transition. -----------------------------------
 $currentVideo = '[photobase]'
-$currentDuration = $photoVideoDuration
+$currentDuration = $mediaVideoDuration
 
 if ($introDuration -gt 0) {$introOffset = [Math]::Max(0,$introDuration - $TransitionDuration)
 $filterParts.Add("[intro][photobase]xfade=transition=fade:duration=${TransitionDuration}:offset=${introOffset}[introphoto]")
 $currentVideo = '[introphoto]'
-$currentDuration = $introDuration + $photoVideoDuration - $TransitionDuration}
+$currentDuration = $introDuration + $mediaVideoDuration - $TransitionDuration}
 
 # -------------------------------------- Add outro transition. -----------------------------------
-if ($outroDuration -gt 0) {$outroOffset = [Math]::Max(0,$currentDuration - $TransitionDuration)
-$outroColourDuration = [Math]::Max(0,$outroDuration - $TransitionDuration)
+if ($outroDuration -gt 0) {$outroColourDuration = [Math]::Max(0,$outroDuration - $TransitionDuration)
 $filterParts.Add("${currentVideo}tpad=stop_mode=clone:stop_duration=${outroColourDuration},setpts=PTS-STARTPTS[videoWithLastPhoto]")
 $filterParts.Add("[outro]format=rgba,trim=duration=${outroColourDuration},setpts=PTS-STARTPTS,fade=t=in:st=0:d=${TransitionDuration}:alpha=1,setpts=PTS-STARTPTS+${currentDuration}/TB[outroFade]")
 $filterParts.Add("[videoWithLastPhoto][outroFade]overlay=eof_action=pass[videoWithOutro]")
@@ -500,11 +551,11 @@ Export-ModuleMember -Function newphotoreel
 
 <#
 ## Overview
-This function will use FFMPEG to create a Facebook safe photo reel from the images and audio file stored in a specified directory.
+This function will use FFMPEG to create a Facebook safe photo reel from the images, existing mp4 video files and an audio file stored in a specified directory.
 
 Usage: NewPhotoReel <Folder> -AudioSpeedAdjust ## -PhotoDuration #.# -FirstPhoto 'filename.ext' -LastPhoto 'filename.ext' -WaterMark 'default|off|watermark.png' -Volume ## -IntroText 'text' -OutroText 'text' -BannerText '(custom text|default|off)' -Order (Chronological|Filename|Random) -KenBurns -RandomTransition -Help
 
-Folder:			The path to the folder containing the audio file and all the relevant photos, but a template directory or the PSD1 file can define some defaults.
+Folder:			The path to the folder containing the audio file and all the relevant media files, but a template directory or the PSD1 file can define some defaults.
 
 The following switches are all optional and if none are specified, the defaults will be used.
 
@@ -525,6 +576,7 @@ Help:			Call the full Help menu.
 This script supports the following formats:
 
 image files:		avif, bmp, gif, jfif, jpeg, jpg, png, tif, tiff, webp
+video files:		mp4
 audio files:		aac, aif, aiff, flac, m4a, mp4, oga, ogg, opus, wav, wma
 
 Notes:
