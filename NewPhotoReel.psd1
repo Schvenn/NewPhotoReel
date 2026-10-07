@@ -1,5 +1,5 @@
 @{RootModule = 'NewPhotoReel.psm1'
-ModuleVersion = '1.8'
+ModuleVersion = '1.9'
 GUID = '5418bf05-be70-4b39-a134-d5d6ca7d16da'
 Author = 'Craig Plath'
 CompanyName = 'Plath Consulting Incorporated'
@@ -15,7 +15,7 @@ FileList = @('NewPhotoReel.psm1')
 PrivateData = @{PSData = @{Tags = @('audio', 'ffmpeg', 'mp4', 'photo', 'video', 'facebook', 'instagram', 'social media', 'avif', 'bmp', 'gif', 'jfif', 'jpeg', 'jpg', 'png', 'tif', 'tiff', 'webp', 'aac', 'aif', 'aiff', 'flac', 'm4a', 'mp4', 'oga', 'ogg', 'opus', 'wav', 'wma')
 LicenseUri = 'https://github.com/Schvenn/NewPhotoReel/blob/main/license.txt'
 ProjectUri = 'https://github.com/Schvenn/NewPhotoReel'
-ReleaseNotes = 'Added a templates directory.'}
+ReleaseNotes = 'Added support for MP4 video merges.'}
 
 AudioSkip = '5'
 AudioFadeIn = '5'
